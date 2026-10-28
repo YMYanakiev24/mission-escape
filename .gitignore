@@ -1,0 +1,23 @@
+# Build output
+build/
+build-*/
+out/
+cmake-build-*/
+CMakeUserPresets.json
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Runtime data created by the game
+saves/
+settings.cfg
+/screenshots/
+*.tmp
+
+# OS clutter
+Thumbs.db
+.DS_Store
