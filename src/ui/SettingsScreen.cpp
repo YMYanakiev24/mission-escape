@@ -100,6 +100,7 @@ void SettingsScreen::loadValues() {
     m_fullscreen.setValue(settings.fullscreen);
     m_showFps.setValue(settings.showFps);
     m_headBob.setValue(settings.headBob);
+    m_screenShake.setValue(settings.screenShake);
 }
 
 void SettingsScreen::refreshSkinCards() {
@@ -130,8 +131,8 @@ void SettingsScreen::rebuildFocus() {
             }
             break;
         default:
-            for (Widget* widget :
-                 std::initializer_list<Widget*>{&m_fullscreen, &m_showFps, &m_headBob}) {
+            for (Widget* widget : std::initializer_list<Widget*>{&m_fullscreen, &m_showFps,
+                                                                 &m_headBob, &m_screenShake}) {
                 m_focus.add(*widget);
             }
             break;
@@ -152,7 +153,8 @@ void SettingsScreen::layout() {
         widget->setBounds(stackedItem(theme, ROW_WIDTH, ROW_HEIGHT, top, row++, ROW_GAP));
     }
     row = 0;
-    for (Widget* widget : std::initializer_list<Widget*>{&m_fullscreen, &m_showFps, &m_headBob}) {
+    for (Widget* widget :
+         std::initializer_list<Widget*>{&m_fullscreen, &m_showFps, &m_headBob, &m_screenShake}) {
         widget->setBounds(stackedItem(theme, ROW_WIDTH, ROW_HEIGHT, top, row++, ROW_GAP));
     }
     const float padding = theme.px(CONTENT_OFFSET);
@@ -178,6 +180,7 @@ void SettingsScreen::applyChanges(const Widget* fired) {
     settings.muted = m_mute.value();
     settings.showFps = m_showFps.value();
     settings.headBob = m_headBob.value();
+    settings.screenShake = m_screenShake.value();
     if (fired == &m_fullscreen) {
         settings.fullscreen = m_fullscreen.value();
         m_context.applyDisplaySettings();

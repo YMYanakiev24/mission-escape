@@ -36,6 +36,7 @@ std::string serializeSettings(const core::Settings& settings) {
     document.setBool("fullscreen", clamped.fullscreen);
     document.setBool("showFps", clamped.showFps);
     document.setBool("headBob", clamped.headBob);
+    document.setBool("screenShake", clamped.screenShake);
     document.setInt("lastSlot", clamped.lastSlot);
     return document.serialize();
 }
@@ -55,6 +56,7 @@ core::Settings parseSettings(std::string_view text) {
     settings.fullscreen = readBool(*document, "fullscreen", defaults.fullscreen);
     settings.showFps = readBool(*document, "showFps", defaults.showFps);
     settings.headBob = readBool(*document, "headBob", defaults.headBob);
+    settings.screenShake = readBool(*document, "screenShake", defaults.screenShake);
     settings.lastSlot = readInt(*document, "lastSlot", defaults.lastSlot);
     return core::clampSettings(settings);
 }

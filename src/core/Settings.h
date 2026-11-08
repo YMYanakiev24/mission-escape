@@ -15,8 +15,9 @@ struct Settings {
     bool muted = false;
     bool fullscreen = false;
     bool showFps = false;
-    bool headBob = true; ///< Subtle camera bob while walking in 3D.
-    int lastSlot = 0;    ///< Slot used by "Continue" (0 = none).
+    bool headBob = true;     ///< Subtle camera bob while walking in 3D.
+    bool screenShake = true; ///< Shake the view when the Hunter catches the player.
+    int lastSlot = 0;        ///< Slot used by "Continue" (0 = none).
 };
 
 /// Returns @p settings with every value forced into its valid range.

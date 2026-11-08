@@ -210,7 +210,7 @@ void GameSession::processEvents() {
     const float cellPixels =
         isFirstPerson() ? m_context.theme.px(PARTICLE_CELL_PIXELS_3D) : m_renderer2D.cellSize();
     for (const core::LevelEvent& event : m_level->takeEvents()) {
-        if (event.type == core::LevelEventType::Caught) {
+        if (event.type == core::LevelEventType::Caught && m_context.settings.screenShake) {
             m_shakeSeconds = SHAKE_SECONDS;
         }
         m_feedback.present(event, cellToScreen(event.cell), cellPixels);

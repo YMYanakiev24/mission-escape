@@ -227,6 +227,16 @@ TEST_CASE(settings, settingsFileRoundTripsAndClampsValues) {
     CHECK(clamped.headBob);
 }
 
+TEST_CASE(settings, screenShakeIsSavedAndDefaultsToOn) {
+    Settings settings;
+    CHECK(settings.screenShake);
+    settings.screenShake = false;
+    CHECK(!io::parseSettings(io::serializeSettings(settings)).screenShake);
+    // settings.cfg files written before the option existed keep the shake on.
+    CHECK(io::parseSettings("version=1\nmasterVolume=40\nheadBob=false\n").screenShake);
+    CHECK(io::parseSettings("screenShake=sometimes\n").screenShake);
+}
+
 TEST_CASE(settings, brokenSettingsFileFallsBackToDefaults) {
     const Settings parsed = io::parseSettings("this is not a settings file");
     CHECK_EQ(parsed.masterVolume, DEFAULT_MASTER_VOLUME);

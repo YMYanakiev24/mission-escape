@@ -65,6 +65,7 @@ private:
     Toggle m_fullscreen{"Fullscreen (borderless)"};
     Toggle m_showFps{"Show FPS counter"};
     Toggle m_headBob{"Head bob in 3D mode"};
+    Toggle m_screenShake{"Screen shake when caught"};
     Button m_back{"Back"};
     FocusGroup m_focus;
 };
