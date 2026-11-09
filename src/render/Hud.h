@@ -33,6 +33,7 @@ struct HudData {
     int targetStars = 3;             ///< Best rating still reachable.
     float targetLimitSeconds = 0.0f; ///< Time limit of that rating (unused for 1 star).
     float targetSecondsLeft = 0.0f;  ///< Seconds left for that rating.
+    float bestSeconds = 0.0f;        ///< Personal best on this level (0 = not completed yet).
     core::Cell playerCell;
     int berries = 0;
     int berryCapacity = 0;

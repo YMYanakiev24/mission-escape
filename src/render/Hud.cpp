@@ -51,8 +51,16 @@ void Hud::drawHeader(const Theme& theme, const HudData& data) const {
     theme.drawText("LEVEL " + std::to_string(data.level), Vector2{x, theme.px(8.0f)},
                    theme.px(textsize::LARGE), palette::TEXT);
     const std::string subtitle = data.tierName + "  |  " + data.modeName;
-    theme.drawText(subtitle, Vector2{x, theme.px(40.0f)}, theme.px(textsize::SMALL),
-                   data.tierAccent);
+    const float subtitleSize = theme.px(textsize::SMALL);
+    theme.drawText(subtitle, Vector2{x, theme.px(40.0f)}, subtitleSize, data.tierAccent);
+    if (data.bestSeconds <= 0.0f) {
+        return;
+    }
+    // Green while the current attempt is still ahead of the personal best.
+    const bool onRecordPace = data.elapsedSeconds < data.bestSeconds;
+    const std::string best = "  |  BEST " + core::formatDuration(data.bestSeconds);
+    theme.drawText(best, Vector2{x + theme.measure(subtitle, subtitleSize).x, theme.px(40.0f)},
+                   subtitleSize, onRecordPace ? palette::ACCENT_GREEN : palette::TEXT_MUTED);
 }
 
 void Hud::drawTimer(const Theme& theme, const HudData& data, float time) const {

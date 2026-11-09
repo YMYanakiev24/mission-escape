@@ -33,6 +33,7 @@ constexpr std::array<MoveBinding, 4> MOVE_BINDINGS_2D = {
     MoveBinding{GameAction::Right, core::Direction::East}};
 
 constexpr float TEXT_VIEW_MARGIN = 12.0f;
+constexpr float MILLISECONDS_PER_SECOND = 1000.0f;
 constexpr float SHAKE_SECONDS = 0.55f;
 constexpr float SHAKE_PIXELS = 14.0f;
 constexpr float VIGNETTE_DEPTH = 0.22f;
@@ -245,6 +246,12 @@ render::HudData GameSession::buildHudData() const {
     data.targetStars = target.stars;
     data.targetLimitSeconds = core::starTimeLimit(target.stars, level.parTimeSeconds());
     data.targetSecondsLeft = target.secondsLeft;
+    if (const core::SaveData* profile = m_context.activeProfile()) {
+        const core::LevelRecord& record = profile->progress.record(level.levelNumber());
+        if (record.completed) {
+            data.bestSeconds = static_cast<float>(record.bestTimeMs) / MILLISECONDS_PER_SECOND;
+        }
+    }
     data.playerCell = level.player().cell();
     data.berries = level.player().berries();
     data.berryCapacity = core::BERRY_CAPACITY;
