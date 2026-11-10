@@ -197,6 +197,28 @@ TEST_CASE(saves, resumingASnapshotRestoresTheExactState) {
     CHECK(resumed.player().facing() == original.player().facing());
     CHECK_EQ(toMilliseconds(resumed.elapsedSeconds()), toMilliseconds(original.elapsedSeconds()));
     CHECK_EQ(resumed.timerStarted(), original.timerStarted());
+    CHECK_EQ(resumed.stepsTaken(), original.stepsTaken());
+    CHECK_EQ(resumed.stepsTaken(), 6);
+}
+
+TEST_CASE(saves, snapshotsWithoutAStepCountStillLoad) {
+    SaveData data = sampleSave();
+    data.snapshot->steps = 42;
+    std::string text = io::serializeSave(data);
+    const io::LoadResult withSteps = io::parseSave(text);
+    REQUIRE(withSteps.status == io::LoadStatus::Ok && withSteps.data.snapshot.has_value());
+    CHECK_EQ(withSteps.data.snapshot->steps, 42);
+
+    // Save files written before the step counter existed have no snapshot.steps line.
+    const std::size_t line = text.find("snapshot.steps=");
+    REQUIRE(line != std::string::npos);
+    text.erase(line, text.find('\n', line) - line + 1);
+    const io::LoadResult older = io::parseSave(text);
+    REQUIRE(older.status == io::LoadStatus::Ok && older.data.snapshot.has_value());
+    CHECK_EQ(older.data.snapshot->steps, 0);
+
+    data.snapshot->steps = -3;
+    CHECK(io::parseSave(io::serializeSave(data)).status == io::LoadStatus::Corrupt);
 }
 
 TEST_CASE(saves, snapshotForAnotherSeedIsRefused) {
@@ -206,6 +228,9 @@ TEST_CASE(saves, snapshotForAnotherSeedIsRefused) {
     CHECK(!level.restore(snapshot));
     snapshot.seed = 5U;
     snapshot.playerCell = Cell{40, 40};
+    CHECK(!level.restore(snapshot));
+    snapshot.playerCell = level.player().cell();
+    snapshot.steps = -1;
     CHECK(!level.restore(snapshot));
 }
 

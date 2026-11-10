@@ -91,8 +91,7 @@ void GameplayScreen::checkFinished() {
     }
     const core::Level& level = session.level();
     if (level.state() == core::LevelState::Won) {
-        m_context.recordLevelResult(level.levelNumber(), level.earnedStars(),
-                                    level.elapsedSeconds(), level.parTimeSeconds());
+        m_context.recordLevelResult(level);
         m_resultShown = true;
         m_context.navigator.push(app::ScreenId::LevelComplete);
     } else if (level.state() == core::LevelState::Caught) {

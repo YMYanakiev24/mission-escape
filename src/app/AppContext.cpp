@@ -120,16 +120,18 @@ void AppContext::createProfile(int slot, core::SaveData data) {
     saveActiveProfile();
 }
 
-void AppContext::recordLevelResult(int level, int stars, float seconds, float parSeconds) {
+void AppContext::recordLevelResult(const core::Level& level) {
     LevelOutcome outcome;
-    outcome.level = level;
-    outcome.stars = stars;
-    outcome.seconds = seconds;
-    outcome.parSeconds = parSeconds;
+    outcome.level = level.levelNumber();
+    outcome.stars = level.earnedStars();
+    outcome.seconds = level.elapsedSeconds();
+    outcome.parSeconds = level.parTimeSeconds();
+    outcome.steps = level.stepsTaken();
+    outcome.shortestSteps = level.shortestPathLength();
     if (core::SaveData* profile = activeProfile()) {
-        const core::ProgressUpdate update =
-            profile->progress.applyResult(level, stars, core::toMilliseconds(seconds));
-        const core::LevelRecord& record = profile->progress.record(level);
+        const core::ProgressUpdate update = profile->progress.applyResult(
+            outcome.level, outcome.stars, core::toMilliseconds(outcome.seconds));
+        const core::LevelRecord& record = profile->progress.record(outcome.level);
         outcome.newRecord = update.newRecord;
         outcome.unlockedSkin = update.skinUnlocked;
         outcome.bestStars = record.bestStars;

@@ -21,7 +21,7 @@ namespace palette = render::palette;
 namespace {
 
 constexpr float PANEL_WIDTH = 600.0f;
-constexpr float PANEL_HEIGHT = 450.0f;
+constexpr float PANEL_HEIGHT = 480.0f;
 constexpr float BUTTON_WIDTH = 168.0f;
 constexpr float BUTTON_HEIGHT = 50.0f;
 constexpr float BUTTON_GAP = 16.0f;
@@ -31,6 +31,18 @@ constexpr float FIRST_STAR_DELAY = 0.45f;
 constexpr float STAR_INTERVAL = 0.38f;
 constexpr float STAR_POP_SECONDS = 0.45f;
 constexpr float STAR_PITCH_STEP = 0.12f;
+
+/// "Steps 87 | shortest route 64", praising routes that match or beat the shortest one.
+std::string routeSummary(int steps, int shortestSteps) {
+    const std::string stepText = "Steps " + std::to_string(steps) + "   |   ";
+    if (steps == shortestSteps) {
+        return stepText + "perfect route!";
+    }
+    if (steps < shortestSteps) {
+        return stepText + "beat the shortest route (" + std::to_string(shortestSteps) + ")!";
+    }
+    return stepText + "shortest route " + std::to_string(shortestSteps);
+}
 
 } // namespace
 
@@ -145,6 +157,11 @@ void LevelCompleteScreen::drawDetails(Rectangle panel) const {
         "   |   2 stars under " + core::formatDuration(core::starTimeLimit(2, outcome.parSeconds));
     theme.drawTextCentered(thresholds, Vector2{centerX, y}, theme.px(render::textsize::SMALL),
                            palette::TEXT_MUTED);
+    y += theme.px(28.0f);
+    const bool greatRoute = outcome.steps <= outcome.shortestSteps;
+    theme.drawTextCentered(routeSummary(outcome.steps, outcome.shortestSteps), Vector2{centerX, y},
+                           theme.px(render::textsize::SMALL),
+                           greatRoute ? palette::ACCENT_GREEN : palette::TEXT_MUTED);
     y += theme.px(32.0f);
     if (outcome.newRecord) {
         const float glow = 0.6f + 0.4f * render::pulse(m_context.time, 1.5f);

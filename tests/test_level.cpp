@@ -77,6 +77,24 @@ TEST_CASE(movement, bufferedMoveRunsWhenCurrentMoveEnds) {
     CHECK_EQ(level.player().cell(), path[2]);
 }
 
+TEST_CASE(movement, stepCounterCountsOnlyStartedMoves) {
+    Level level(1, 12, SEED, ViewMode::Classic2D);
+    CHECK_EQ(level.stepsTaken(), 0);
+    const std::optional<Direction> blocked = blockedDirection(level);
+    REQUIRE(blocked.has_value());
+    level.tryMove(*blocked);
+    CHECK_EQ(level.stepsTaken(), 0); // bumping into a wall is not a step
+    const auto step = nextStepToward(level.maze(), level.player().cell(), level.maze().exit(),
+                                     PassRules{true, false});
+    REQUIRE(step.has_value());
+    REQUIRE(level.tryMove(*step) == MoveResult::Moved);
+    CHECK(level.tryMove(*step) == MoveResult::Busy);
+    CHECK_EQ(level.stepsTaken(), 1); // input during the animation is not a step either
+    finishMove(level);
+    level.turnLeft();
+    CHECK_EQ(level.stepsTaken(), 1);
+}
+
 TEST_CASE(movement, turningChangesFacingOnly) {
     Level level(1, 12, SEED, ViewMode::FirstPerson3D);
     const Direction before = level.player().facing();
@@ -101,6 +119,11 @@ TEST_CASE(playthrough, solverFollowingBfsPathCompletesLevelWithStars) {
         }
         CHECK_EQ(level.state(), LevelState::Won);
         CHECK_EQ(level.player().cell(), level.maze().exit());
+        // The solver may use secret doors, so it never needs more than the door-free route.
+        CHECK_EQ(level.stepsTaken(),
+                 shortestPathLength(level.maze(), level.maze().start(), level.maze().exit(),
+                                    PassRules{true, false}));
+        CHECK(level.stepsTaken() <= level.shortestPathLength());
         // Walking the shortest path without detours is always well inside the 3-star time.
         CHECK_EQ(level.earnedStars(), 3);
         CHECK_EQ(level.earnedStars(), starsForTime(level.elapsedSeconds(), level.parTimeSeconds()));

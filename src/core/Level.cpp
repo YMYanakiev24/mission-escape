@@ -140,6 +140,7 @@ void Level::startMove(Direction direction) {
         emit(LevelEventType::SecretDoorUsed, from);
     }
     m_player.beginMove(neighbour(from, direction), moveSecondsFor(m_mode));
+    ++m_stepsTaken;
     emit(LevelEventType::Moved, m_player.cell());
     updateVisibility(); // reveal the destination as soon as the step starts
 }
@@ -298,6 +299,7 @@ LevelSnapshot Level::snapshot() const {
     result.chaserCell = m_chaser.isActive() ? m_chaser.cell() : Cell{};
     result.chaserActiveMs = toMilliseconds(m_chaser.activeSeconds());
     result.graceMs = toMilliseconds(m_graceRemaining);
+    result.steps = m_stepsTaken;
     return result;
 }
 
@@ -324,7 +326,8 @@ bool Level::restore(const LevelSnapshot& saved) {
     const bool positionsValid = m_maze.inBounds(saved.playerCell) &&
                                 (!saved.chaserActive || m_maze.inBounds(saved.chaserCell));
     const bool chaserAllowed = !saved.chaserActive || m_spec.hasChaser;
-    if (!matches || !positionsValid || !chaserAllowed || saved.elapsedMs < 0 || isFinished()) {
+    if (!matches || !positionsValid || !chaserAllowed || saved.elapsedMs < 0 || saved.steps < 0 ||
+        isFinished()) {
         return false;
     }
     Fog restoredFog(m_maze.size());
@@ -340,6 +343,7 @@ bool Level::restore(const LevelSnapshot& saved) {
     m_player.setBerries(saved.berries);
     m_elapsed = millisecondsToSeconds(saved.elapsedMs);
     m_timerStarted = saved.timerStarted;
+    m_stepsTaken = saved.steps;
     m_bufferedMove.reset();
     m_graceRemaining = millisecondsToSeconds(saved.graceMs);
     m_chaser = Chaser();

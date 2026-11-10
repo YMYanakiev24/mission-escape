@@ -107,6 +107,9 @@ public:
     /// Door-free shortest path from start to exit in steps (basis of the par time).
     int shortestPathLength() const noexcept { return m_shortestPathLength; }
 
+    /// Moves made so far in this attempt; bumps into walls and ignored input do not count.
+    int stepsTaken() const noexcept { return m_stepsTaken; }
+
     /// Par time in seconds for this level, tier and view mode.
     float parTimeSeconds() const noexcept { return m_parTime; }
 
@@ -190,6 +193,7 @@ private:
     bool m_timerStarted = false;
     std::optional<Direction> m_bufferedMove;
     int m_shortestPathLength = 0;
+    int m_stepsTaken = 0;
     float m_parTime = 0.0f;
     int m_earnedStars = 0;
     float m_graceRemaining = 0.0f;

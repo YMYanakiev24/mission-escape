@@ -23,6 +23,10 @@
 /// @file AppContext.h
 /// Services shared by all screens: fonts, navigation, profiles, settings, the game session.
 
+namespace core {
+class Level;
+} // namespace core
+
 namespace app {
 
 class GameSession;
@@ -48,6 +52,8 @@ struct LevelOutcome {
     int stars = 0;
     float seconds = 0.0f;
     float parSeconds = 0.0f;
+    int steps = 0;         ///< Moves the player made.
+    int shortestSteps = 0; ///< Door-free shortest route from start to exit.
     bool newRecord = false;
     int bestStars = 0;
     float bestSeconds = 0.0f;
@@ -91,7 +97,7 @@ struct AppContext {
     void createProfile(int slot, core::SaveData data);
 
     /// Records a finished level in the active profile and fills lastOutcome.
-    void recordLevelResult(int level, int stars, float seconds, float parSeconds);
+    void recordLevelResult(const core::Level& level);
 
     /// Writes the active profile to its slot (stamping the last-played time).
     void saveActiveProfile();

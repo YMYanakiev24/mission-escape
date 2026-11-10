@@ -20,6 +20,8 @@ constexpr long long MAX_SEED = std::numeric_limits<std::uint32_t>::max();
 constexpr int YEAR_OFFSET = 1900;
 constexpr int TWO_DIGITS = 10;
 constexpr int BITS_PER_HEX_DIGIT = 4;
+/// Generous upper bound for the step counter of a saved attempt.
+constexpr long long MAX_SNAPSHOT_STEPS = 10'000'000;
 
 /// Signals the first invalid field while parsing; the message becomes the corruption reason.
 struct ParseFailure {
@@ -96,6 +98,7 @@ void writeSnapshot(KeyValueDocument& document, const core::LevelSnapshot& snapsh
     document.setInt("snapshot.chaserY", snapshot.chaserCell.y);
     document.setInt("snapshot.chaserActiveMs", snapshot.chaserActiveMs);
     document.setInt("snapshot.graceMs", snapshot.graceMs);
+    document.setInt("snapshot.steps", snapshot.steps);
 }
 
 // ----------------------------------------------------------------------------------------
@@ -267,6 +270,11 @@ core::LevelSnapshot readSnapshot(const KeyValueDocument& document, int size) {
     snapshot.graceMs = static_cast<int>(
         requireInt(document, "snapshot.graceMs", 0,
                    static_cast<long long>(core::CHASER_GRACE_SECONDS * MILLISECONDS_PER_SECOND)));
+    // Saves written before the step counter existed simply resume counting from zero.
+    if (document.has("snapshot.steps")) {
+        snapshot.steps =
+            static_cast<int>(requireInt(document, "snapshot.steps", 0, MAX_SNAPSHOT_STEPS));
+    }
     return snapshot;
 }
 

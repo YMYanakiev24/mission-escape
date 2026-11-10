@@ -30,6 +30,7 @@ struct LevelSnapshot {
     Cell chaserCell;
     int chaserActiveMs = 0; ///< How long the chaser has been hunting (speed ramp).
     int graceMs = 0;        ///< Remaining grace time before the chaser appears.
+    int steps = 0;          ///< Moves made so far in this attempt.
 };
 
 } // namespace core
