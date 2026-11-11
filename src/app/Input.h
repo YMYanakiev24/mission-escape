@@ -46,6 +46,7 @@ enum class GameAction {
     StrafeRight,    ///< 3D only (E).
     UseBerry,       ///< Shift: activate a Magic Berry.
     Pause,          ///< Esc or P.
+    Restart,        ///< R: start the level over on the same maze.
     ToggleTextView, ///< T.
     ToggleMinimap   ///< M.
 };

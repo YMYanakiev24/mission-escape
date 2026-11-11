@@ -28,24 +28,29 @@ constexpr float KEY_COLUMN = 190.0f;
 
 using KeyLine = std::pair<const char*, const char*>;
 
-constexpr std::array<KeyLine, 6> CONTROLS_2D = {
+constexpr std::size_t CONTROL_LINES = 7;
+
+constexpr std::array<KeyLine, CONTROL_LINES> CONTROLS_2D = {
     KeyLine{"Arrows / WASD", "Move one cell (hold to keep walking)"},
     KeyLine{"Shift", "Use a Magic Berry: phase through walls"},
     KeyLine{"T", "Toggle the ASCII text view"},
     KeyLine{"Mouse", "Hover a cell to see what it is"},
+    KeyLine{"R", "Restart the level on the same maze"},
     KeyLine{"Esc / P", "Pause (the timer stops)"},
     KeyLine{"Text view", "# wall, % secret door, @ you, E exit"}};
 
-constexpr std::array<KeyLine, 6> CONTROLS_3D = {KeyLine{"W / Up", "Step forward"},
-                                                KeyLine{"S / Down", "Step back"},
-                                                KeyLine{"A D / Left Right", "Turn 90 degrees"},
-                                                KeyLine{"Q / E", "Strafe left / right"},
-                                                KeyLine{"M", "Small / large minimap"},
-                                                KeyLine{"Shift", "Use a Magic Berry"}};
+constexpr std::array<KeyLine, CONTROL_LINES> CONTROLS_3D = {
+    KeyLine{"W / Up", "Step forward"},
+    KeyLine{"S / Down", "Step back"},
+    KeyLine{"A D / Left Right", "Turn 90 degrees"},
+    KeyLine{"Q / E", "Strafe left / right"},
+    KeyLine{"M", "Small / large minimap"},
+    KeyLine{"Shift", "Use a Magic Berry"},
+    KeyLine{"R", "Restart the level"}};
 
 /// Draws "key  description" rows starting at @p origin; returns the y below the last row.
 float drawKeyLines(const render::Theme& theme, Vector2 origin,
-                   const std::array<KeyLine, 6>& lines) {
+                   const std::array<KeyLine, CONTROL_LINES>& lines) {
     float y = origin.y;
     for (const KeyLine& line : lines) {
         theme.drawText(line.first, Vector2{origin.x, y}, theme.px(render::textsize::SMALL),

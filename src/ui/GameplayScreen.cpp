@@ -80,6 +80,14 @@ void GameplayScreen::update(float deltaSeconds, const app::InputState& input) {
         session.refreshView();
         return;
     }
+    // Quick restart for chasing better times: same maze, fresh timer, no menu in between.
+    if (canPause && session.level().timerStarted() &&
+        app::isActionPressed(app::GameAction::Restart)) {
+        m_context.restartLevel();
+        m_context.uiSounds.activated();
+        session.refreshView();
+        return;
+    }
     session.update(deltaSeconds, input);
     checkFinished();
 }

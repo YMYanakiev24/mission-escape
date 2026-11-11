@@ -44,10 +44,10 @@ constexpr float PARTICLE_CELL_PIXELS_3D = 42.0f;
 constexpr float SHAKE_WORLD_PER_PIXEL = 0.006f;
 constexpr float EVENT_SCREEN_HEIGHT_3D = 0.62f;
 constexpr const char* HINT_2D =
-    "ARROWS / WASD  move     SHIFT  berry     T  text view     ESC  pause";
+    "ARROWS / WASD  move     SHIFT  berry     T  text view     R  restart     ESC  pause";
 constexpr const char* HINT_3D =
     "W S  walk     A D  turn     Q E  strafe     SHIFT  berry     M  map     T  text view     "
-    "ESC  pause";
+    "R  restart     ESC  pause";
 
 std::string cellLabel(core::Cell cell) {
     return "Cell (" + std::to_string(cell.x) + ", " + std::to_string(cell.y) + "). ";

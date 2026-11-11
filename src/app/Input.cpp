@@ -32,6 +32,8 @@ KeyBinding bindingFor(GameAction action) {
             return {KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT, KEY_NULL};
         case GameAction::Pause:
             return {KEY_ESCAPE, KEY_P, KEY_NULL};
+        case GameAction::Restart:
+            return {KEY_R, KEY_NULL, KEY_NULL};
         case GameAction::ToggleTextView:
             return {KEY_T, KEY_NULL, KEY_NULL};
         case GameAction::ToggleMinimap:
