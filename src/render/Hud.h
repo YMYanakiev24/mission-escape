@@ -38,7 +38,8 @@ struct HudData {
     int berries = 0;
     int berryCapacity = 0;
     std::vector<HudEffect> effects;
-    std::string hint; ///< Control reminder at the bottom of the screen.
+    std::string hint;               ///< Control reminder at the bottom of the screen.
+    std::string berryKey = "SHIFT"; ///< Key or button shown next to the berry slots.
 };
 
 /// Draws the HUD; stateless apart from layout constants.

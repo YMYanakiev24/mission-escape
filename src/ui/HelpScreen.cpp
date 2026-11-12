@@ -105,10 +105,16 @@ void HelpScreen::drawControls(Rectangle area) const {
     theme.drawText("3D FIRST-PERSON", Vector2{area.x + columnWidth, area.y},
                    theme.px(render::textsize::BODY), palette::TEXT_MUTED);
     drawKeyLines(theme, Vector2{area.x + columnWidth, area.y + theme.px(40.0f)}, CONTROLS_3D);
-    theme.drawWrapped("Menus: arrow keys move the highlight, Enter selects, Esc goes back. "
-                      "Everything also works with the mouse.",
-                      Vector2{area.x, area.y + theme.px(260.0f)}, area.width,
-                      theme.px(render::textsize::SMALL), palette::TEXT_MUTED);
+    const float textSize = theme.px(render::textsize::SMALL);
+    float y = area.y + theme.px(260.0f);
+    y += theme.drawWrapped("Menus: arrow keys move the highlight, Enter selects, Esc goes back. "
+                           "Everything also works with the mouse.",
+                           Vector2{area.x, y}, area.width, textSize, palette::TEXT_MUTED);
+    theme.drawWrapped("Gamepad: D-pad or left stick moves, X or RT eats a berry, Y shows the text "
+                      "view, LB / RB strafe and LT resizes the map in 3D, Select restarts and "
+                      "Start pauses. In menus A selects and B goes back.",
+                      Vector2{area.x, y + theme.px(10.0f)}, area.width, textSize,
+                      palette::TEXT_MUTED);
 }
 
 void HelpScreen::drawPerks(Rectangle area) const {

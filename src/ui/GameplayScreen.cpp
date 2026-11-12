@@ -145,9 +145,10 @@ void GameplayScreen::drawTierIntro() const {
         core::tierDescription(tier), Vector2{panel.x + padding, panel.y + theme.px(160.0f)},
         panel.width - 2.0f * padding, theme.px(render::textsize::BODY), palette::TEXT);
     const float blink = 0.5f + 0.5f * render::pulse(m_context.time, 1.0f);
-    theme.drawTextCentered(
-        "press ENTER to begin", Vector2{centerX, panel.y + panel.height - theme.px(36.0f)},
-        theme.px(render::textsize::SMALL), render::fade(accent, 0.5f + 0.5f * blink));
+    theme.drawTextCentered(app::isUsingGamepad() ? "press A to begin" : "press ENTER to begin",
+                           Vector2{centerX, panel.y + panel.height - theme.px(36.0f)},
+                           theme.px(render::textsize::SMALL),
+                           render::fade(accent, 0.5f + 0.5f * blink));
 }
 
 void GameplayScreen::openPause() {

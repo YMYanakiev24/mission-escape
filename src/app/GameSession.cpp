@@ -48,6 +48,11 @@ constexpr const char* HINT_2D =
 constexpr const char* HINT_3D =
     "W S  walk     A D  turn     Q E  strafe     SHIFT  berry     M  map     T  text view     "
     "R  restart     ESC  pause";
+constexpr const char* PAD_HINT_2D =
+    "D-PAD / STICK  move     X  berry     Y  text view     SELECT  restart     START  pause";
+constexpr const char* PAD_HINT_3D =
+    "UP DOWN  walk     LEFT RIGHT  turn     LB RB  strafe     X  berry     LT  map     "
+    "Y  text view     SELECT  restart     START  pause";
 
 std::string cellLabel(core::Cell cell) {
     return "Cell (" + std::to_string(cell.x) + ", " + std::to_string(cell.y) + "). ";
@@ -255,7 +260,13 @@ render::HudData GameSession::buildHudData() const {
     data.playerCell = level.player().cell();
     data.berries = level.player().berries();
     data.berryCapacity = core::BERRY_CAPACITY;
-    data.hint = isFirstPerson() ? HINT_3D : HINT_2D;
+    const bool gamepad = isUsingGamepad();
+    if (gamepad) {
+        data.hint = isFirstPerson() ? PAD_HINT_3D : PAD_HINT_2D;
+    } else {
+        data.hint = isFirstPerson() ? HINT_3D : HINT_2D;
+    }
+    data.berryKey = gamepad ? "X" : "SHIFT";
     if (level.spec().hasChaser && !level.chaser().isActive()) {
         data.effects.push_back(render::HudEffect{
             level.timerStarted() ? "The Hunter wakes up" : "The Hunter wakes after your first move",

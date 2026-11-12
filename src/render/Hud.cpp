@@ -114,7 +114,7 @@ void Hud::drawStatus(const Theme& theme, const HudData& data) const {
         drawBerryIcon(Vector2{x, iconY}, radius, slot < data.berries, 0.0f);
     }
     const float labelRight = right - static_cast<float>(data.berryCapacity) * spacing;
-    theme.drawTextRight("SHIFT", Vector2{labelRight, iconY - theme.px(8.0f)},
+    theme.drawTextRight(data.berryKey, Vector2{labelRight, iconY - theme.px(8.0f)},
                         theme.px(textsize::TINY), palette::TEXT_MUTED);
 }
 
