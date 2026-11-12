@@ -21,8 +21,10 @@ namespace render {
 /// Draws the maze, the exit portal, the player and overlays for one level in 2D.
 ///
 /// The static walls are rendered once per level (and per cell size) into an off-screen
-/// texture with a layered neon glow; each frame only blits that texture and draws the
-/// animated elements on top, so even a 50 x 50 maze costs a handful of draw calls.
+/// texture with a layered neon glow; each frame only blits that texture (once as a soft drop
+/// shadow, once for real) and draws the animated elements on top, so even a 50 x 50 maze
+/// costs a handful of draw calls. The player, the exit portal, the chaser and the perks cast
+/// coloured light onto the floor, and an ambient halo frames the maze in the viewport.
 class Renderer2D {
 public:
     /// Smallest cell size (pixels) at which the whole maze is shown at once.
@@ -61,7 +63,10 @@ private:
     void updateFog(float deltaSeconds, const core::Level& level, bool snap);
     void rebuildWallCache(const core::Maze& maze);
     void drawRuns(float thickness, Color color) const;
+    Rectangle mazeScreenRect(const Camera2D& camera) const;
+    void drawBackdrop(const core::Level& level, const Camera2D& camera, float time) const;
     void drawFloor(const core::Level& level) const;
+    void drawFloorLights(const core::Level& level, const Camera2D& camera, float time) const;
     void drawWallCache(const core::Level& level) const;
     void drawSecretDoors(const core::Level& level, float time) const;
     void drawExit(const core::Maze& maze, float time) const;

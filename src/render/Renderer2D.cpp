@@ -48,6 +48,29 @@ constexpr float PHASE_WALL_OPACITY = 0.32f;
 constexpr float PERK_RADIUS = 0.26f;
 constexpr float TRAIL_SPACING = 0.12f;
 
+/// Walls cast a soft shadow down and to the right, as if lit from the top-left.
+constexpr float WALL_SHADOW_OFFSET = 0.08f; // cells
+constexpr float WALL_SHADOW_OPACITY = 0.6f;
+
+/// Coloured light pools on the floor: radius in cells and peak opacity (additive).
+struct FloorLight {
+    float radius;
+    float opacity;
+};
+constexpr FloorLight PLAYER_FLOOR_LIGHT{2.8f, 0.20f};
+constexpr FloorLight EXIT_FLOOR_LIGHT{2.4f, 0.16f};
+constexpr FloorLight CHASER_FLOOR_LIGHT{2.2f, 0.22f};
+constexpr FloorLight PERK_FLOOR_LIGHT{0.9f, 0.14f};
+
+/// Ambient backdrop around the maze.
+constexpr float BACKDROP_AMBIENT_OPACITY = 0.07f;
+constexpr int HALO_LAYERS = 6;
+constexpr float HALO_LAYER_SPACING = 0.12f; // cells
+constexpr float HALO_OPACITY = 0.10f;
+constexpr int BACKDROP_DOT_SPACING = 2; // cells
+constexpr float BACKDROP_DOT_OPACITY = 0.55f;
+constexpr float BACKDROP_DOT_FADE_CELLS = 6.0f;
+
 /// Screen angle of a compass direction (0 = east, clockwise because y points down).
 float directionAngle(core::Direction direction) {
     switch (direction) {
@@ -205,8 +228,10 @@ void Renderer2D::draw(const core::Level& level, float time) const {
     Camera2D camera = m_camera;
     camera.offset.x += m_shake.x;
     camera.offset.y += m_shake.y;
+    drawBackdrop(level, camera, time);
     BeginMode2D(camera);
     drawFloor(level);
+    drawFloorLights(level, camera, time);
     drawPlayerLight(level, time);
     drawWallCache(level);
     drawSecretDoors(level, time);
@@ -348,6 +373,110 @@ void Renderer2D::drawFloor(const core::Level& level) const {
     }
 }
 
+Rectangle Renderer2D::mazeScreenRect(const Camera2D& camera) const {
+    const float extent = static_cast<float>(m_mazeSize) * m_cellSize * camera.zoom;
+    const Vector2 topLeft = GetWorldToScreen2D(Vector2{0.0f, 0.0f}, camera);
+    return Rectangle{topLeft.x, topLeft.y, extent, extent};
+}
+
+void Renderer2D::drawBackdrop(const core::Level& level, const Camera2D& camera, float time) const {
+    const Rectangle maze = mazeScreenRect(camera);
+    const Rectangle visible = GetCollisionRec(maze, m_viewport);
+    const TierStyle style = tierStyle(level.spec().tier);
+
+    // A wide, dim pool of the tier colour behind the visible part of the maze lifts it off the
+    // flat background.
+    const Vector2 focus{visible.x + visible.width / 2.0f, visible.y + visible.height / 2.0f};
+    const float reach = 0.65f * std::hypot(m_viewport.width, m_viewport.height);
+    drawGlow(focus, reach, fade(style.accent, BACKDROP_AMBIENT_OPACITY));
+
+    // A faint dot grid continues the maze grid outwards and fades with distance from the maze.
+    // It is anchored to the maze, so it scrolls with the camera.
+    const float spacing = static_cast<float>(BACKDROP_DOT_SPACING) * m_cellSize * camera.zoom;
+    if (spacing >= 4.0f) {
+        const float dotRadius = std::max(1.5f, m_cellSize * 0.05f);
+        const Color dotColor = mix(palette::PANEL_HI, style.accent, 0.3f);
+        const float firstX = maze.x - std::ceil((maze.x - m_viewport.x) / spacing) * spacing;
+        const float firstY = maze.y - std::ceil((maze.y - m_viewport.y) / spacing) * spacing;
+        for (float y = firstY; y <= m_viewport.y + m_viewport.height; y += spacing) {
+            for (float x = firstX; x <= m_viewport.x + m_viewport.width; x += spacing) {
+                const float dx = std::max({maze.x - x, 0.0f, x - (maze.x + maze.width)});
+                const float dy = std::max({maze.y - y, 0.0f, y - (maze.y + maze.height)});
+                if (dx <= 0.0f && dy <= 0.0f) {
+                    continue; // inside the maze: the floor grid takes over there
+                }
+                const float cells = std::hypot(dx, dy) / (m_cellSize * camera.zoom);
+                const float falloff = 1.0f - cells / BACKDROP_DOT_FADE_CELLS;
+                if (falloff <= 0.0f) {
+                    continue;
+                }
+                const float twinkle = 0.7f + 0.3f * pulse(time * 0.35f - cells * 0.12f, 1.0f);
+                DrawCircleV(Vector2{x, y}, dotRadius,
+                            fade(dotColor, BACKDROP_DOT_OPACITY * falloff * twinkle));
+            }
+        }
+    }
+
+    // A soft neon halo hugs the outer wall; each layer is the rectangle offset outwards, so the
+    // corners round off naturally.
+    const float layerWidth = std::max(1.0f, HALO_LAYER_SPACING * m_cellSize * camera.zoom);
+    const float breathe = 0.85f + 0.15f * pulse(time, 0.25f);
+    for (int layer = 1; layer <= HALO_LAYERS; ++layer) {
+        const float grow = static_cast<float>(layer) * layerWidth;
+        const Rectangle ring{maze.x - grow, maze.y - grow, maze.width + 2.0f * grow,
+                             maze.height + 2.0f * grow};
+        const float roundness = std::clamp(2.0f * grow / ring.width, 0.0f, 1.0f);
+        const float strength = 1.0f - static_cast<float>(layer) / (HALO_LAYERS + 1.0f);
+        DrawRectangleRoundedLinesEx(ring, roundness, RING_SEGMENTS / 3, layerWidth,
+                                    fade(palette::WALL_GLOW, HALO_OPACITY * strength * breathe));
+    }
+}
+
+void Renderer2D::drawFloorLights(const core::Level& level, const Camera2D& camera,
+                                 float time) const {
+    // Light must stay on the floor: clip to the part of the maze that is inside the viewport.
+    const Rectangle clip = GetCollisionRec(mazeScreenRect(camera), m_viewport);
+    if (clip.width < 1.0f || clip.height < 1.0f) {
+        return;
+    }
+    BeginScissorMode(static_cast<int>(clip.x), static_cast<int>(clip.y),
+                     static_cast<int>(std::ceil(clip.width)),
+                     static_cast<int>(std::ceil(clip.height)));
+    BeginBlendMode(BLEND_ADDITIVE);
+    const auto pool = [this](Vector2 center, FloorLight light, Color color, float strength) {
+        drawGlow(center, light.radius * m_cellSize, fade(color, light.opacity * strength));
+    };
+    const auto centerOf = [this](core::Cell cell) {
+        return cellCenter(core::Vec2f{static_cast<float>(cell.x), static_cast<float>(cell.y)});
+    };
+
+    const bool fogged = level.spec().hasFog;
+    if (!fogged) { // in the fog the sight radius is already lit cell by cell
+        pool(cellCenter(level.player().visualPosition()), PLAYER_FLOOR_LIGHT, palette::ACCENT_BLUE,
+             0.9f + 0.1f * pulse(time, 1.3f));
+    }
+    pool(centerOf(level.maze().exit()), EXIT_FLOOR_LIGHT, palette::ACCENT_GREEN,
+         0.75f + 0.25f * pulse(time, 0.9f));
+    for (const core::PerkItem& perk : level.perks()) {
+        if (perk.collected || (fogged && !level.fog().isExplored(perk.cell))) {
+            continue;
+        }
+        pool(centerOf(perk.cell), PERK_FLOOR_LIGHT, perkColor(perk.type), 1.0f);
+    }
+    const core::Chaser& chaser = level.chaser();
+    if (chaser.isActive()) {
+        const bool frozen = level.effects().isActive(core::EffectType::ChaserFreeze);
+        const Color color =
+            frozen ? mix(palette::DANGER, palette::ACCENT_BLUE, 0.75f) : palette::DANGER;
+        pool(cellCenter(chaser.visualPosition()), CHASER_FLOOR_LIGHT, color,
+             frozen ? 0.6f : 0.8f + 0.2f * pulse(time, 3.0f));
+    }
+    EndBlendMode();
+    // Restore the viewport clip for everything drawn after the lights.
+    BeginScissorMode(static_cast<int>(m_viewport.x), static_cast<int>(m_viewport.y),
+                     static_cast<int>(m_viewport.width), static_cast<int>(m_viewport.height));
+}
+
 void Renderer2D::drawWallCache(const core::Level& level) const {
     if (!m_wallCache.isValid()) {
         return;
@@ -358,6 +487,12 @@ void Renderer2D::drawWallCache(const core::Level& level) const {
     const float opacity = level.isPhasing() ? PHASE_WALL_OPACITY : 1.0f;
     const auto channel = static_cast<unsigned char>(255.0f * opacity);
     BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
+    // Drop shadow first: a black tint keeps only the cached alpha, which darkens the floor
+    // just below and to the right of every wall and makes the walls read as raised.
+    const float shadowOffset = WALL_SHADOW_OFFSET * m_cellSize;
+    const auto shadow = static_cast<unsigned char>(255.0f * WALL_SHADOW_OPACITY * opacity);
+    DrawTextureRec(m_wallCache.get().texture, flippedSource(m_wallCache),
+                   Vector2{shadowOffset - padding, shadowOffset - padding}, Color{0, 0, 0, shadow});
     DrawTextureRec(m_wallCache.get().texture, flippedSource(m_wallCache),
                    Vector2{-padding, -padding}, Color{channel, channel, channel, channel});
     EndBlendMode();
