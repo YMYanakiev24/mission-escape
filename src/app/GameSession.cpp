@@ -219,13 +219,21 @@ void GameSession::processEvents() {
         if (event.type == core::LevelEventType::Caught && m_context.settings.screenShake) {
             m_shakeSeconds = SHAKE_SECONDS;
         }
+        if (event.type == core::LevelEventType::Moved) {
+            m_mouseActive = false; // playing with keys or a pad: hide the tooltip
+        }
         m_feedback.present(event, cellToScreen(event.cell), cellPixels);
     }
 }
 
 void GameSession::updateHover(const InputState& input) {
+    // A cursor resting over the maze must not keep a tooltip on top of the play area (or let it
+    // jump from cell to cell as the camera scrolls); it comes back once the mouse moves.
+    if (input.mouseMoved) {
+        m_mouseActive = true;
+    }
     m_hoverCell.reset();
-    if (!m_showTextView && !isFirstPerson()) { // tooltips belong to the top-down view
+    if (m_mouseActive && !m_showTextView && !isFirstPerson()) { // top-down view only
         m_hoverCell = m_renderer2D.cellAt(input.mouse);
     }
 }

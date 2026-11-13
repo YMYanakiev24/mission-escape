@@ -104,6 +104,7 @@ private:
     bool m_showTextView = false;
     std::optional<core::Cell> m_hoverCell;
     Vector2 m_mouse{};
+    bool m_mouseActive = false; ///< Mouse moved since the player last moved (tooltips shown).
     float m_secondsSinceFinished = 0.0f;
     float m_shakeSeconds = 0.0f;
     float m_heartbeatSeconds = 0.0f;

@@ -3,6 +3,7 @@
 #include "render/Primitives.h"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 namespace render {
@@ -152,22 +153,38 @@ void Theme::drawTabular(std::string_view text, Vector2 position, float size, Col
     }
 }
 
-float Theme::drawWrapped(std::string_view text, Vector2 position, float maxWidth, float size,
-                         Color color) const {
-    const float lineHeight = size * LINE_HEIGHT_RATIO;
-    float y = position.y;
+std::vector<std::string> Theme::wrapLines(std::string_view text, float maxWidth, float size) const {
+    std::vector<std::string> lines;
     std::string line;
     for (const std::string& word : splitWords(text)) {
         const std::string candidate = line.empty() ? word : line + " " + word;
         if (!line.empty() && measure(candidate, size).x > maxWidth) {
-            drawText(line, Vector2{position.x, y}, size, color);
-            y += lineHeight;
+            lines.push_back(std::move(line));
             line = word;
         } else {
             line = candidate;
         }
     }
     if (!line.empty()) {
+        lines.push_back(std::move(line));
+    }
+    return lines;
+}
+
+Vector2 Theme::measureWrapped(std::string_view text, float maxWidth, float size) const {
+    const std::vector<std::string> lines = wrapLines(text, maxWidth, size);
+    float width = 0.0f;
+    for (const std::string& line : lines) {
+        width = std::max(width, measure(line, size).x);
+    }
+    return Vector2{width, static_cast<float>(lines.size()) * size * LINE_HEIGHT_RATIO};
+}
+
+float Theme::drawWrapped(std::string_view text, Vector2 position, float maxWidth, float size,
+                         Color color) const {
+    const float lineHeight = size * LINE_HEIGHT_RATIO;
+    float y = position.y;
+    for (const std::string& line : wrapLines(text, maxWidth, size)) {
         drawText(line, Vector2{position.x, y}, size, color);
         y += lineHeight;
     }

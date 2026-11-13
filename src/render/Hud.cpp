@@ -156,10 +156,13 @@ void Hud::drawTooltip(const Theme& theme, Vector2 anchor, const std::string& tit
     const float bodySize = theme.px(textsize::TINY);
     const float maxWidth = theme.px(TOOLTIP_MAX_WIDTH);
     const float titleWidth = theme.measure(title, titleSize).x;
-    const float bodyWidth = std::min(maxWidth, theme.measure(body, bodySize).x);
-    const float width = std::max(titleWidth, bodyWidth) + 2.0f * padding;
-    const float bodyLines = body.empty() ? 0.0f : 1.0f + theme.measure(body, bodySize).x / maxWidth;
-    const float height = padding * 2.0f + titleSize + bodyLines * bodySize * 1.3f;
+    const float bodyTop = titleSize * 1.15f;
+    // Measure the body exactly as drawWrapped() will lay it out, so the box fits the text
+    // instead of guessing a (fractional) line count.
+    const Vector2 bodyExtent =
+        body.empty() ? Vector2{0.0f, 0.0f} : theme.measureWrapped(body, maxWidth, bodySize);
+    const float width = std::max(titleWidth, bodyExtent.x) + 2.0f * padding;
+    const float height = padding * 2.0f + (body.empty() ? titleSize : bodyTop + bodyExtent.y);
     Rectangle box{anchor.x + theme.px(18.0f), anchor.y + theme.px(18.0f), width, height};
     // Keep the tooltip on screen.
     box.x = std::min(box.x, static_cast<float>(GetScreenWidth()) - width - theme.px(6.0f));
@@ -168,8 +171,8 @@ void Hud::drawTooltip(const Theme& theme, Vector2 anchor, const std::string& tit
               theme.px(1.5f));
     theme.drawText(title, Vector2{box.x + padding, box.y + padding}, titleSize, palette::TEXT);
     if (!body.empty()) {
-        theme.drawWrapped(body, Vector2{box.x + padding, box.y + padding + titleSize * 1.15f},
-                          maxWidth, bodySize, palette::TEXT_MUTED);
+        theme.drawWrapped(body, Vector2{box.x + padding, box.y + padding + bodyTop}, maxWidth,
+                          bodySize, palette::TEXT_MUTED);
     }
 }
 

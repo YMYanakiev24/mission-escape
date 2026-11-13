@@ -48,10 +48,7 @@ void AppContext::startLevel(int level) {
     core::SaveData* profile = activeProfile();
     const int size = profile != nullptr ? profile->mazeSize : core::DEFAULT_MAZE_SIZE;
     const core::ViewMode mode = profile != nullptr ? profile->viewMode : core::ViewMode::Classic2D;
-    if (profile != nullptr && profile->snapshot) {
-        profile->snapshot.reset(); // starting another attempt replaces the saved one
-        saveActiveProfile();
-    }
+    discardSavedAttempt(); // starting another attempt replaces the saved one
     pendingSession =
         std::make_unique<GameSession>(*this, level, size, core::makeRandomSeed(), mode);
     pendingSessionEnd = false;
@@ -62,6 +59,7 @@ void AppContext::retryLevel() {
     if (!session) {
         return;
     }
+    discardSavedAttempt();
     const core::Level& level = session->level();
     pendingSession = std::make_unique<GameSession>(*this, level.levelNumber(), session->mazeSize(),
                                                    level.seed(), level.viewMode());
@@ -71,6 +69,7 @@ void AppContext::retryLevel() {
 
 void AppContext::restartLevel() {
     if (session) {
+        discardSavedAttempt();
         session->restart();
     }
 }
@@ -78,6 +77,14 @@ void AppContext::restartLevel() {
 void AppContext::endSession() {
     pendingSession.reset();
     pendingSessionEnd = true;
+}
+
+void AppContext::discardSavedAttempt() {
+    core::SaveData* profile = activeProfile();
+    if (profile != nullptr && profile->snapshot) {
+        profile->snapshot.reset();
+        saveActiveProfile();
+    }
 }
 
 void AppContext::applyPendingSessionChange() {

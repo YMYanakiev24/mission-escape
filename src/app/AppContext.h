@@ -84,6 +84,10 @@ struct AppContext {
     /// Schedules the running session to be discarded at the next screen switch.
     void endSession();
 
+    /// Deletes the saved in-progress level of the active profile (and saves) once the attempt
+    /// it belongs to has ended or been replaced, so "Continue" cannot bring it back.
+    void discardSavedAttempt();
+
     /// Applies a scheduled session change; called by the screen stack at the black frame.
     void applyPendingSessionChange();
 

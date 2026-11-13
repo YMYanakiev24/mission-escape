@@ -4,6 +4,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 /// @file Theme.h
 /// Fonts, UI scaling and text drawing helpers shared by every screen.
@@ -84,8 +85,12 @@ public:
     float drawWrapped(std::string_view text, Vector2 position, float maxWidth, float size,
                       Color color) const;
 
+    /// Width of the widest line and total height that drawWrapped() would use for @p text.
+    Vector2 measureWrapped(std::string_view text, float maxWidth, float size) const;
+
 private:
     float spacingFor(float size) const;
+    std::vector<std::string> wrapLines(std::string_view text, float maxWidth, float size) const;
 
     Font m_font{};
     bool m_ownsFont = false;

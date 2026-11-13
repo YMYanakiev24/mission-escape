@@ -103,7 +103,10 @@ void GameplayScreen::checkFinished() {
         m_resultShown = true;
         m_context.navigator.push(app::ScreenId::LevelComplete);
     } else if (level.state() == core::LevelState::Caught) {
-        m_resultShown = true; // caught: 0 stars, records untouched
+        // Caught: 0 stars and records untouched. A resumed save of this attempt is gone too,
+        // otherwise "Continue" would undo the catch.
+        m_context.discardSavedAttempt();
+        m_resultShown = true;
         m_context.navigator.push(app::ScreenId::Caught);
     }
 }
@@ -188,7 +191,9 @@ void GameplayScreen::handlePauseAction(const Widget* fired) {
 void GameplayScreen::handleConfirmDialog(const app::InputState& input) {
     const DialogResult result = m_confirm.update(m_context.theme, input);
     if (result == DialogResult::Confirmed) {
-        m_context.endSession(); // a quit scores 0 stars and leaves every record untouched
+        // A quit scores 0 stars, leaves every record untouched and abandons any resumed save.
+        m_context.discardSavedAttempt();
+        m_context.endSession();
         m_context.navigator.replaceWith(app::ScreenId::LevelSelect);
     }
 }
