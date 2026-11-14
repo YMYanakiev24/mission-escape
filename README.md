@@ -7,7 +7,7 @@ every level can be played in a 2D top-down view or a 3D first-person view.
 
 ## Team
 
-We are a team of four students from class 9V.
+We are a team of four students from class 10V.
 
 | Name | Role |
 |---|---|
