@@ -152,4 +152,9 @@ docs/                 documentation
 - [docs/QA.md](docs/QA.md) – QA documentation: every test function, the manual checklist and
   requirement traceability.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) – building, testing and extending the project.
-
+- [docs/Mission_Escape_Documentation.docx](docs/Mission_Escape_Documentation.docx) – the whole
+  project documentation as one Word document.
+- [docs/Mission_Escape_Presentation.pptx](docs/Mission_Escape_Presentation.pptx) – the
+  presentation of the project (PowerPoint).
+- [docs/QA_Test_Report.xlsx](docs/QA_Test_Report.xlsx) – the QA test report: every automated
+  test, the manual checklist to fill in and the requirement traceability (Excel).
