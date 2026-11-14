@@ -51,75 +51,85 @@ function(mission_escape_enable_warnings target)
 endfunction()
 
 # ---------------------------------------------------------------------------
-# maze_core: pure C++ game logic and persistence (no raylib, no iostream)
+# Business logic layer (src/business): the game rules, no raylib and no files
 # ---------------------------------------------------------------------------
-add_library(maze_core STATIC
-    src/core/Cell.cpp
-    src/core/Chaser.cpp
-    src/core/Fog.cpp
-    src/core/Level.cpp
-    src/core/LevelRules.cpp
-    src/core/Maze.cpp
-    src/core/MazeGenerator.cpp
-    src/core/Pathfinding.cpp
-    src/core/Perks.cpp
-    src/core/Player.cpp
-    src/core/Progress.cpp
-    src/core/Random.cpp
-    src/core/Scoring.cpp
-    src/core/Settings.cpp
-    src/core/TextView.cpp
-    src/core/Validation.cpp
-    src/io/KeyValueDocument.cpp
-    src/io/SaveSystem.cpp
-    src/io/SettingsStore.cpp
+add_library(maze_business STATIC
+    src/business/core/Cell.cpp
+    src/business/core/Chaser.cpp
+    src/business/core/Fog.cpp
+    src/business/core/Level.cpp
+    src/business/core/LevelRules.cpp
+    src/business/core/Maze.cpp
+    src/business/core/MazeGenerator.cpp
+    src/business/core/Pathfinding.cpp
+    src/business/core/Perks.cpp
+    src/business/core/Player.cpp
+    src/business/core/Progress.cpp
+    src/business/core/Random.cpp
+    src/business/core/Scoring.cpp
+    src/business/core/Settings.cpp
+    src/business/core/TextView.cpp
+    src/business/core/Validation.cpp
 )
-target_include_directories(maze_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-mission_escape_enable_warnings(maze_core)
+target_include_directories(maze_business PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/business)
+mission_escape_enable_warnings(maze_business)
 
 # ---------------------------------------------------------------------------
-# maze_game: the executable (rendering, UI, audio, app state machine)
+# Data access layer (src/data): save slots and settings as key=value text files
+# ---------------------------------------------------------------------------
+add_library(maze_data STATIC
+    src/data/io/KeyValueDocument.cpp
+    src/data/io/SaveSystem.cpp
+    src/data/io/SettingsStore.cpp
+)
+target_include_directories(maze_data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/data)
+target_link_libraries(maze_data PUBLIC maze_business)
+mission_escape_enable_warnings(maze_data)
+
+# ---------------------------------------------------------------------------
+# Presentation layer (src/presentation): window, input, screens, rendering, audio
 # ---------------------------------------------------------------------------
 add_executable(maze_game
     src/main.cpp
-    src/app/App.cpp
-    src/audio/AudioManager.cpp
-    src/audio/Synth.cpp
-    src/app/AppContext.cpp
-    src/app/FeedbackPresenter.cpp
-    src/app/GameSession.cpp
-    src/app/Input.cpp
-    src/app/ScreenStack.cpp
-    src/app/ScreenshotTour.cpp
-    src/render/Effects.cpp
-    src/render/Hud.cpp
-    src/render/MenuBackground.cpp
-    src/render/PerkIcons.cpp
-    src/render/Primitives.cpp
-    src/render/MazeMesh.cpp
-    src/render/Minimap.cpp
-    src/render/Renderer2D.cpp
-    src/render/Renderer3D.cpp
-    src/render/SkinRenderer.cpp
-    src/render/TextViewRenderer.cpp
-    src/render/Theme.cpp
-    src/render/WallRuns.cpp
-    src/ui/CaughtScreen.cpp
-    src/ui/ConfirmDialog.cpp
-    src/ui/GameCompleteScreen.cpp
-    src/ui/GameplayScreen.cpp
-    src/ui/HelpScreen.cpp
-    src/ui/LevelCompleteScreen.cpp
-    src/ui/LevelSelectScreen.cpp
-    src/ui/LoadGameScreen.cpp
-    src/ui/MainMenuScreen.cpp
-    src/ui/MenuStyle.cpp
-    src/ui/NewGameScreen.cpp
-    src/ui/SettingsScreen.cpp
-    src/ui/SplashScreen.cpp
-    src/ui/Widgets.cpp
+    src/presentation/app/App.cpp
+    src/presentation/app/AppContext.cpp
+    src/presentation/app/FeedbackPresenter.cpp
+    src/presentation/app/GameSession.cpp
+    src/presentation/app/Input.cpp
+    src/presentation/app/ScreenStack.cpp
+    src/presentation/app/ScreenshotTour.cpp
+    src/presentation/audio/AudioManager.cpp
+    src/presentation/audio/Synth.cpp
+    src/presentation/render/Effects.cpp
+    src/presentation/render/Hud.cpp
+    src/presentation/render/MazeMesh.cpp
+    src/presentation/render/MenuBackground.cpp
+    src/presentation/render/Minimap.cpp
+    src/presentation/render/PerkIcons.cpp
+    src/presentation/render/Primitives.cpp
+    src/presentation/render/Renderer2D.cpp
+    src/presentation/render/Renderer3D.cpp
+    src/presentation/render/SkinRenderer.cpp
+    src/presentation/render/TextViewRenderer.cpp
+    src/presentation/render/Theme.cpp
+    src/presentation/render/WallRuns.cpp
+    src/presentation/ui/CaughtScreen.cpp
+    src/presentation/ui/ConfirmDialog.cpp
+    src/presentation/ui/GameCompleteScreen.cpp
+    src/presentation/ui/GameplayScreen.cpp
+    src/presentation/ui/HelpScreen.cpp
+    src/presentation/ui/LevelCompleteScreen.cpp
+    src/presentation/ui/LevelSelectScreen.cpp
+    src/presentation/ui/LoadGameScreen.cpp
+    src/presentation/ui/MainMenuScreen.cpp
+    src/presentation/ui/MenuStyle.cpp
+    src/presentation/ui/NewGameScreen.cpp
+    src/presentation/ui/SettingsScreen.cpp
+    src/presentation/ui/SplashScreen.cpp
+    src/presentation/ui/Widgets.cpp
 )
-target_link_libraries(maze_game PRIVATE maze_core raylib)
+target_include_directories(maze_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/presentation)
+target_link_libraries(maze_game PRIVATE maze_business maze_data raylib)
 mission_escape_enable_warnings(maze_game)
 
 if(MSVC)
@@ -142,7 +152,7 @@ if(MISSION_ESCAPE_BUILD_TESTS)
     add_executable(maze_tests
         tests/test_main.cpp
         tests/test_audio.cpp
-        src/audio/Synth.cpp
+        src/presentation/audio/Synth.cpp
         tests/test_chaser.cpp
         tests/test_fog.cpp
         tests/test_generation.cpp
@@ -158,7 +168,9 @@ if(MISSION_ESCAPE_BUILD_TESTS)
         tests/test_textview.cpp
         tests/test_validation.cpp
     )
-    target_link_libraries(maze_tests PRIVATE maze_core)
+    # Synth.cpp is pure (no raylib), so the tests compile it from the presentation layer.
+    target_include_directories(maze_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/presentation)
+    target_link_libraries(maze_tests PRIVATE maze_business maze_data)
     mission_escape_enable_warnings(maze_tests)
 
     set(MISSION_ESCAPE_TEST_SUITES
