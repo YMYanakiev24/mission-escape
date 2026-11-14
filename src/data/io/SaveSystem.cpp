@@ -4,8 +4,6 @@
 #include "core/Validation.h"
 #include "io/KeyValueDocument.h"
 
-#include <chrono>
-#include <ctime>
 #include <limits>
 #include <system_error>
 
@@ -17,8 +15,6 @@ constexpr int MAX_TIMESTAMP_LENGTH = 32;
 constexpr int MAX_COLLECTED_PERKS = 4096;
 constexpr int MILLISECONDS_PER_SECOND = 1000;
 constexpr long long MAX_SEED = std::numeric_limits<std::uint32_t>::max();
-constexpr int YEAR_OFFSET = 1900;
-constexpr int TWO_DIGITS = 10;
 constexpr int BITS_PER_HEX_DIGIT = 4;
 /// Generous upper bound for the step counter of a saved attempt.
 constexpr long long MAX_SNAPSHOT_STEPS = 10'000'000;
@@ -34,10 +30,6 @@ std::string levelKey(int level) {
 
 std::string effectKeyName(core::EffectType type) {
     return "snapshot.effect." + std::string(core::effectKey(type));
-}
-
-std::string twoDigits(int value) {
-    return (value < TWO_DIGITS ? "0" : "") + std::to_string(value);
 }
 
 std::string joinInts(const std::vector<int>& values) {
@@ -314,19 +306,6 @@ LoadResult parseSave(std::string_view text) {
         result.error = failure.message;
     }
     return result;
-}
-
-std::string currentTimestamp() {
-    const std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm local{};
-#if defined(_WIN32)
-    localtime_s(&local, &now);
-#else
-    localtime_r(&now, &local);
-#endif
-    return std::to_string(local.tm_year + YEAR_OFFSET) + "-" + twoDigits(local.tm_mon + 1) + "-" +
-           twoDigits(local.tm_mday) + " " + twoDigits(local.tm_hour) + ":" +
-           twoDigits(local.tm_min);
 }
 
 SaveSystem::SaveSystem(std::filesystem::path directory) : m_directory(std::move(directory)) {}

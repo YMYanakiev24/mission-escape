@@ -54,10 +54,6 @@ constexpr const char* PAD_HINT_3D =
     "UP DOWN  walk     LEFT RIGHT  turn     LB RB  strafe     X  berry     LT  map     "
     "Y  text view     SELECT  restart     START  pause";
 
-std::string cellLabel(core::Cell cell) {
-    return "Cell (" + std::to_string(cell.x) + ", " + std::to_string(cell.y) + "). ";
-}
-
 /// Executes movement keys: a fresh press moves now (or is buffered behind the running move),
 /// a held key keeps walking as soon as the previous move has finished.
 void applyMovementBindings(core::Level& level, FeedbackPresenter& feedback,
@@ -133,11 +129,11 @@ void GameSession::update(float deltaSeconds, const InputState& input) {
     }
     m_shakeSeconds = std::max(0.0f, m_shakeSeconds - deltaSeconds);
     m_effects.update(deltaSeconds);
-    if (!m_context.lastPersistenceError.empty()) {
-        m_effects.toast(m_context.lastPersistenceError, palette::WALL_GLOW);
-        m_context.lastPersistenceError.clear();
+    if (!m_context.profiles.lastError().empty()) {
+        m_effects.toast(m_context.profiles.lastError(), palette::WALL_GLOW);
+        m_context.profiles.lastError().clear();
     }
-    if (const core::SaveData* profile = m_context.activeProfile()) {
+    if (const core::SaveData* profile = m_context.profiles.activeProfile()) {
         m_renderer2D.setSkin(profile->progress.selectedSkin());
     }
     m_renderer2D.setShake(shakeOffset());
@@ -145,7 +141,7 @@ void GameSession::update(float deltaSeconds, const InputState& input) {
     m_renderer3D.setShake(
         Vector2{shake.x * SHAKE_WORLD_PER_PIXEL, shake.y * SHAKE_WORLD_PER_PIXEL});
     if (isFirstPerson()) {
-        m_renderer3D.update(deltaSeconds, *m_level, m_context.settings.headBob);
+        m_renderer3D.update(deltaSeconds, *m_level, m_context.profiles.settings().headBob);
     } else {
         m_renderer2D.update(deltaSeconds, *m_level, viewport(), m_context.theme.scale());
     }
@@ -157,7 +153,7 @@ void GameSession::refreshView() {
     m_renderer2D.setShake(Vector2{0.0f, 0.0f});
     m_renderer3D.setShake(Vector2{0.0f, 0.0f});
     if (isFirstPerson()) {
-        m_renderer3D.update(0.0f, *m_level, m_context.settings.headBob);
+        m_renderer3D.update(0.0f, *m_level, m_context.profiles.settings().headBob);
     } else {
         m_renderer2D.update(0.0f, *m_level, viewport(), m_context.theme.scale());
     }
@@ -216,7 +212,8 @@ void GameSession::processEvents() {
     const float cellPixels =
         isFirstPerson() ? m_context.theme.px(PARTICLE_CELL_PIXELS_3D) : m_renderer2D.cellSize();
     for (const core::LevelEvent& event : m_level->takeEvents()) {
-        if (event.type == core::LevelEventType::Caught && m_context.settings.screenShake) {
+        if (event.type == core::LevelEventType::Caught &&
+            m_context.profiles.settings().screenShake) {
             m_shakeSeconds = SHAKE_SECONDS;
         }
         if (event.type == core::LevelEventType::Moved) {
@@ -259,7 +256,7 @@ render::HudData GameSession::buildHudData() const {
     data.targetStars = target.stars;
     data.targetLimitSeconds = core::starTimeLimit(target.stars, level.parTimeSeconds());
     data.targetSecondsLeft = target.secondsLeft;
-    if (const core::SaveData* profile = m_context.activeProfile()) {
+    if (const core::SaveData* profile = m_context.profiles.activeProfile()) {
         const core::LevelRecord& record = profile->progress.record(level.levelNumber());
         if (record.completed) {
             data.bestSeconds = static_cast<float>(record.bestTimeMs) / MILLISECONDS_PER_SECOND;
@@ -359,32 +356,31 @@ void GameSession::drawDangerVignette() const {
 CellDescription GameSession::describeCell(core::Cell cell) const {
     const core::Maze& maze = m_level->maze();
     if (m_level->spec().hasFog && !m_level->fog().isExplored(cell)) {
-        return {"Unexplored", cellLabel(cell) + "Hidden in the fog. Walk closer to see it."};
+        return {"Unexplored", "Hidden in the fog. Walk closer to see it."};
     }
     if (m_level->chaser().isActive() && cell == m_level->chaser().cell()) {
-        return {"The Hunter",
-                cellLabel(cell) + "It follows the shortest path to you. Keep moving!"};
+        return {"The Hunter", "It follows the shortest path to you. Keep moving!"};
     }
     for (const core::PerkItem& perk : m_level->perks()) {
         if (!perk.collected && perk.cell == cell) {
             return {std::string(core::perkName(perk.type)),
-                    cellLabel(cell) + std::string(core::perkDescription(perk.type))};
+                    std::string(core::perkDescription(perk.type))};
         }
     }
     if (cell == maze.exit()) {
-        return {"Exit portal", cellLabel(cell) + "Step inside to finish the level."};
+        return {"Exit portal", "Step inside to finish the level."};
     }
     if (cell == maze.start()) {
-        return {"Start", cellLabel(cell) + "Every run begins in the top-left corner."};
+        return {"Start", "Every run begins in the top-left corner."};
     }
     for (const core::Direction direction : core::ALL_DIRECTIONS) {
         if (maze.hasSecretDoor(cell, direction)) {
-            return {"Secret door", cellLabel(cell) + "A green rune on the " +
+            return {"Secret door", "A green rune on the " +
                                        std::string(core::directionName(direction)) +
                                        " wall: you can walk straight through it."};
         }
     }
-    return {"Path", cellLabel(cell) + "An open corridor cell."};
+    return {"Path", "An open corridor cell."};
 }
 
 void GameSession::drawWorld(float time) {
@@ -394,8 +390,8 @@ void GameSession::drawWorld(float time) {
         return;
     }
     m_renderer3D.draw(*m_level, time);
-    const core::SkinId skin = m_context.activeProfile() != nullptr
-                                  ? m_context.activeProfile()->progress.selectedSkin()
+    const core::SkinId skin = m_context.profiles.activeProfile() != nullptr
+                                  ? m_context.profiles.activeProfile()->progress.selectedSkin()
                                   : core::SkinId::Wisp;
     m_renderer3D.drawHandLight(skin, *m_level, time);
     m_minimap.draw(m_context.theme, *m_level, m_renderer3D.yaw(), skin, time);

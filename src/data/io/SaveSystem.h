@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Repositories.h"
 #include "core/SaveData.h"
 
 #include <filesystem>
@@ -7,19 +8,13 @@
 #include <string_view>
 
 /// @file SaveSystem.h
-/// Save slots stored as `saves/slotN.sav` key=value text files.
+/// Data access layer: save slots stored as `saves/slotN.sav` key=value text files.
 
 namespace io {
 
-/// Outcome of reading a save slot.
-enum class LoadStatus { Ok, Missing, Corrupt };
-
-/// A loaded slot, or the reason it could not be loaded.
-struct LoadResult {
-    LoadStatus status = LoadStatus::Missing;
-    core::SaveData data;
-    std::string error; ///< Human readable reason when status is Corrupt.
-};
+/// The load result types belong to the business layer's repository contract.
+using LoadStatus = core::LoadStatus;
+using LoadResult = core::LoadResult;
 
 /// Serialises a profile (including an optional level snapshot) to save-file text.
 std::string serializeSave(const core::SaveData& data);
@@ -28,11 +23,8 @@ std::string serializeSave(const core::SaveData& data);
 /// the function never throws and never crashes on malformed input.
 LoadResult parseSave(std::string_view text);
 
-/// Current local date and time as "YYYY-MM-DD HH:MM".
-std::string currentTimestamp();
-
-/// Reads and writes the three save slots inside one folder.
-class SaveSystem {
+/// Reads and writes the three save slots inside one folder (implements core::SaveRepository).
+class SaveSystem final : public core::SaveRepository {
 public:
     /// Uses @p directory (created on first save if missing).
     explicit SaveSystem(std::filesystem::path directory);
@@ -41,13 +33,13 @@ public:
     std::filesystem::path slotPath(int slot) const;
 
     /// Loads slot 1..3.
-    LoadResult load(int slot) const;
+    LoadResult load(int slot) const override;
 
     /// Writes slot 1..3 atomically; returns false and fills @p error on failure.
-    bool save(int slot, const core::SaveData& data, std::string& error) const;
+    bool save(int slot, const core::SaveData& data, std::string& error) const override;
 
     /// Deletes slot 1..3; returns true if the slot no longer exists afterwards.
-    bool erase(int slot) const;
+    bool erase(int slot) const override;
 
 private:
     std::filesystem::path m_directory;

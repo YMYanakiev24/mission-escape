@@ -136,14 +136,14 @@ void NewGameScreen::rebuildFocus() {
 }
 
 std::string NewGameScreen::slotLabel(int slotIndex) const {
-    const app::SaveSlot& slot = m_context.slots[static_cast<std::size_t>(slotIndex)];
+    const core::SaveSlot& slot = m_context.profiles.slots()[static_cast<std::size_t>(slotIndex)];
     const std::string prefix = "Slot " + std::to_string(slotIndex + 1) + "  -  ";
     switch (slot.status) {
-        case app::SlotStatus::Empty:
+        case core::SlotStatus::Empty:
             return prefix + "empty";
-        case app::SlotStatus::Corrupt:
+        case core::SlotStatus::Corrupt:
             return prefix + "save corrupted (will be replaced)";
-        case app::SlotStatus::Ready:
+        case core::SlotStatus::Ready:
             break;
     }
     return prefix + slot.data->playerName + ", level " +
@@ -227,12 +227,12 @@ void NewGameScreen::handleSlotStep(const Widget* fired) {
             continue;
         }
         m_slot = static_cast<int>(index) + 1;
-        const app::SaveSlot& slot = m_context.slots[index];
-        if (slot.status == app::SlotStatus::Empty) {
+        const core::SaveSlot& slot = m_context.profiles.slots()[index];
+        if (slot.status == core::SlotStatus::Empty) {
             goTo(Step::Name);
         } else {
             const std::string owner =
-                slot.status == app::SlotStatus::Ready ? slot.data->playerName + "'s" : "the";
+                slot.status == core::SlotStatus::Ready ? slot.data->playerName + "'s" : "the";
             m_confirm.open("Overwrite slot " + std::to_string(m_slot) + "?",
                            "This permanently replaces " + owner +
                                " progress in this slot with a new game.",
@@ -298,7 +298,7 @@ void NewGameScreen::finish() {
     data.playerName = name.name;
     data.mazeSize = size.size;
     data.viewMode = m_mode;
-    m_context.createProfile(m_slot, std::move(data));
+    m_context.profiles.createProfile(m_slot, std::move(data));
     m_context.navigator.replaceWith(app::ScreenId::LevelSelect);
 }
 

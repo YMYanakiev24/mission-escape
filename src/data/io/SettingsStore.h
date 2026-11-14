@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Repositories.h"
 #include "core/Settings.h"
 
 #include <filesystem>
@@ -7,7 +8,7 @@
 #include <string_view>
 
 /// @file SettingsStore.h
-/// Persistence of user preferences in `settings.cfg`.
+/// Data access layer: persistence of user preferences in `settings.cfg`.
 
 namespace io {
 
@@ -18,17 +19,17 @@ std::string serializeSettings(const core::Settings& settings);
 /// defaults and out-of-range numbers are clamped. A broken file therefore never stops the game.
 core::Settings parseSettings(std::string_view text);
 
-/// Loads and saves the settings file.
-class SettingsStore {
+/// Loads and saves the settings file (implements core::SettingsRepository).
+class SettingsStore final : public core::SettingsRepository {
 public:
     /// Reads and writes @p file.
     explicit SettingsStore(std::filesystem::path file);
 
     /// Reads the file; returns defaults if it is missing or unreadable.
-    core::Settings load() const;
+    core::Settings load() const override;
 
     /// Writes the file atomically.
-    bool save(const core::Settings& settings, std::string& error) const;
+    bool save(const core::Settings& settings, std::string& error) const override;
 
 private:
     std::filesystem::path m_file;

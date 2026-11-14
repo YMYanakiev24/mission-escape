@@ -34,17 +34,18 @@ MainMenuScreen::MainMenuScreen(app::AppContext& context) : m_context(context) {
 
 void MainMenuScreen::onEnter() {
     // Problems reported while saving or resuming are shown here for a few seconds.
-    m_notice = m_context.lastPersistenceError;
+    m_notice = m_context.profiles.lastError();
     m_noticeSeconds = m_notice.empty() ? 0.0f : NOTICE_SECONDS;
-    m_context.lastPersistenceError.clear();
+    m_context.profiles.lastError().clear();
     m_continue.setEnabled(canContinue());
     m_focus.focus(canContinue() ? m_continue : m_newGame);
 }
 
 bool MainMenuScreen::canContinue() const {
-    const int slot = m_context.settings.lastSlot;
+    const int slot = m_context.profiles.settings().lastSlot;
     return core::isValidSlot(slot) &&
-           m_context.slots[static_cast<std::size_t>(slot - 1)].status == app::SlotStatus::Ready;
+           m_context.profiles.slots()[static_cast<std::size_t>(slot - 1)].status ==
+               core::SlotStatus::Ready;
 }
 
 void MainMenuScreen::layout() {
@@ -56,7 +57,7 @@ void MainMenuScreen::layout() {
 }
 
 void MainMenuScreen::continueGame() {
-    if (!m_context.activateSlot(m_context.settings.lastSlot)) {
+    if (!m_context.profiles.activateSlot(m_context.profiles.settings().lastSlot)) {
         return;
     }
     if (!m_context.resumeSnapshot()) {
@@ -83,10 +84,10 @@ void MainMenuScreen::handleAction(const Widget* fired) {
 void MainMenuScreen::update(float deltaSeconds, const app::InputState& input) {
     m_context.menuBackground.update(deltaSeconds);
     m_noticeSeconds = std::max(0.0f, m_noticeSeconds - deltaSeconds);
-    if (!m_context.lastPersistenceError.empty()) {
-        m_notice = m_context.lastPersistenceError; // e.g. a snapshot that could not be resumed
+    if (!m_context.profiles.lastError().empty()) {
+        m_notice = m_context.profiles.lastError(); // e.g. a snapshot that could not be resumed
         m_noticeSeconds = NOTICE_SECONDS;
-        m_context.lastPersistenceError.clear();
+        m_context.profiles.lastError().clear();
     }
     m_continue.setEnabled(canContinue());
     layout();
@@ -106,8 +107,9 @@ void MainMenuScreen::draw() {
                            theme.px(render::textsize::BODY), palette::ACCENT_GREEN);
     m_focus.draw(theme, m_context.time);
     if (canContinue()) {
-        const app::SaveSlot& slot =
-            m_context.slots[static_cast<std::size_t>(m_context.settings.lastSlot - 1)];
+        const core::SaveSlot& slot =
+            m_context.profiles
+                .slots()[static_cast<std::size_t>(m_context.profiles.settings().lastSlot - 1)];
         const Rectangle bounds = m_continue.bounds();
         const std::string detail = slot.data->playerName + "  -  level " +
                                    std::to_string(slot.data->progress.highestUnlockedLevel());

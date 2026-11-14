@@ -5,23 +5,23 @@
 #include "audio/AudioManager.h"
 #include "core/Config.h"
 #include "core/LevelRules.h"
+#include "core/ProfileService.h"
 #include "core/Progress.h"
+#include "core/Repositories.h"
 #include "core/SaveData.h"
 #include "core/Settings.h"
-#include "io/SaveSystem.h"
-#include "io/SettingsStore.h"
 #include "render/MenuBackground.h"
 #include "render/Theme.h"
 
-#include <array>
 #include <cstdint>
-#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
 
 /// @file AppContext.h
 /// Services shared by all screens: fonts, navigation, profiles, settings, the game session.
+/// Profiles and settings come from the business layer (core::ProfileService); this layer never
+/// touches the data layer directly.
 
 namespace core {
 class Level;
@@ -34,16 +34,6 @@ class GameSession;
 /// Options parsed from the command line.
 struct LaunchOptions {
     bool screenshotTour = false; ///< `--screenshots`: auto-walk the screens, save PNGs, exit.
-};
-
-/// State of one save slot as seen by the menus.
-enum class SlotStatus { Empty, Ready, Corrupt };
-
-/// One of the three save slots.
-struct SaveSlot {
-    SlotStatus status = SlotStatus::Empty;
-    std::optional<core::SaveData> data; ///< Present when status is Ready.
-    std::string error;                  ///< Reason when status is Corrupt.
 };
 
 /// Summary of the most recently finished level, shown by the result screens.
@@ -64,8 +54,10 @@ struct LevelOutcome {
 /// Owned by App and destroyed before the window closes, so GPU resources held here are
 /// always released while the GL context still exists.
 struct AppContext {
-    /// @param dataDirectory folder that holds `saves/` and `settings.cfg`.
-    AppContext(LaunchOptions launchOptions, const std::filesystem::path& dataDirectory);
+    /// Uses @p saves and @p settingsStore, the data-layer implementations chosen by main(),
+    /// only through their business-layer interfaces.
+    AppContext(LaunchOptions launchOptions, core::SaveRepository& saves,
+               core::SettingsRepository& settingsStore);
     /// Releases the session and GPU resources (before the window closes).
     ~AppContext();
     AppContext(const AppContext&) = delete;
@@ -84,36 +76,11 @@ struct AppContext {
     /// Schedules the running session to be discarded at the next screen switch.
     void endSession();
 
-    /// Deletes the saved in-progress level of the active profile (and saves) once the attempt
-    /// it belongs to has ended or been replaced, so "Continue" cannot bring it back.
-    void discardSavedAttempt();
-
     /// Applies a scheduled session change; called by the screen stack at the black frame.
     void applyPendingSessionChange();
 
-    /// The profile being played, or null when no slot is active.
-    core::SaveData* activeProfile();
-
-    /// Makes @p slot (1..3) the active profile; returns false if it holds no valid data.
-    bool activateSlot(int slot);
-
-    /// Stores @p data in @p slot and makes it the active profile.
-    void createProfile(int slot, core::SaveData data);
-
     /// Records a finished level in the active profile and fills lastOutcome.
     void recordLevelResult(const core::Level& level);
-
-    /// Writes the active profile to its slot (stamping the last-played time).
-    void saveActiveProfile();
-
-    /// Writes settings.cfg.
-    void saveSettings();
-
-    /// Reads settings.cfg and all three save slots from disk.
-    void loadPersistentData();
-
-    /// Deletes the save file of @p slot and forgets it in memory.
-    void deleteSlot(int slot);
 
     /// Resumes the in-progress level stored in the active profile; false if there is none
     /// or it no longer matches its maze (it is then discarded).
@@ -127,18 +94,12 @@ struct AppContext {
     void applyDisplaySettings();
 
     LaunchOptions options;
-    bool persistenceEnabled = true; ///< False during the screenshot tour.
-    io::SaveSystem saves;
-    io::SettingsStore settingsStore;
-    std::string lastPersistenceError; ///< Shown as a toast when a save fails.
+    core::ProfileService profiles; ///< Save slots, active profile and settings (business layer).
     render::Theme theme;
     audio::AudioManager audio;
     UiSounds uiSounds{audio}; ///< Hover/click sounds for every menu.
     render::MenuBackground menuBackground;
     Navigator navigator;
-    core::Settings settings;
-    std::array<SaveSlot, core::SAVE_SLOT_COUNT> slots;
-    int activeSlot = 0;                          ///< 1..3, or 0 when no profile is active.
     std::unique_ptr<GameSession> session;        ///< The level being played, if any.
     std::unique_ptr<GameSession> pendingSession; ///< Replaces session at the next switch.
     bool pendingSessionEnd = false;              ///< Discard session at the next switch.
