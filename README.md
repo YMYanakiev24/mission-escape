@@ -28,7 +28,7 @@ We are a team of four students from class 10V.
 | GitHub | Repository, issues and planning |
 | Microsoft Teams | Team communication and the assignment |
 | clang-format | Consistent code formatting |
-| Claude AI (Anthropic) | Help on the project and with the graphics library (see [Credits](#credits)) |
+| Claude AI (Anthropic) | Help on the project and with the graphics library (see [CREDITS.md](CREDITS.md)) |
 
 ## Features
 
@@ -153,9 +153,3 @@ docs/                 documentation
   requirement traceability.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) – building, testing and extending the project.
 
-## Credits
-
-How the project was built and which third-party resources it uses is recorded in
-[CREDITS.md](CREDITS.md): YMYanakiev24 wrote the prompts that specify the project, and the code
-and docs were written by Claude (Anthropic's AI) from those prompts. Third-party resources are
-raylib (zlib licence) and the Chakra Petch font (SIL Open Font License).
