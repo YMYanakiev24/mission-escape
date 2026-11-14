@@ -44,13 +44,13 @@ void LoadGameScreen::onEnter() {
 void LoadGameScreen::refresh() {
     m_focus.clear();
     for (int index = 0; index < core::SAVE_SLOT_COUNT; ++index) {
-        const app::SaveSlot& slot = m_context.slots[slotIndex(index)];
+        const core::SaveSlot& slot = m_context.profiles.slots()[slotIndex(index)];
         SlotControls& controls = m_controls[slotIndex(index)];
-        const bool ready = slot.status == app::SlotStatus::Ready;
+        const bool ready = slot.status == core::SlotStatus::Ready;
         const bool hasSnapshot = ready && slot.data->snapshot.has_value();
         controls.load.setEnabled(ready);
         controls.resume.setEnabled(hasSnapshot);
-        controls.remove.setEnabled(slot.status != app::SlotStatus::Empty);
+        controls.remove.setEnabled(slot.status != core::SlotStatus::Empty);
         if (hasSnapshot) {
             controls.resume.setLabel("Resume Level " + std::to_string(slot.data->snapshot->level));
         }
@@ -97,16 +97,16 @@ void LoadGameScreen::handleAction(const Widget* fired) {
     for (int index = 0; index < core::SAVE_SLOT_COUNT; ++index) {
         const SlotControls& controls = m_controls[slotIndex(index)];
         const int slot = index + 1;
-        if (fired == &controls.load && m_context.activateSlot(slot)) {
+        if (fired == &controls.load && m_context.profiles.activateSlot(slot)) {
             m_context.navigator.replaceWith(app::ScreenId::LevelSelect);
-        } else if (fired == &controls.resume && m_context.activateSlot(slot)) {
+        } else if (fired == &controls.resume && m_context.profiles.activateSlot(slot)) {
             if (!m_context.resumeSnapshot()) {
                 refresh();
             }
         } else if (fired == &controls.remove) {
             m_pendingDelete = slot;
-            const app::SaveSlot& saved = m_context.slots[slotIndex(index)];
-            const std::string owner = saved.status == app::SlotStatus::Ready
+            const core::SaveSlot& saved = m_context.profiles.slots()[slotIndex(index)];
+            const std::string owner = saved.status == core::SlotStatus::Ready
                                           ? saved.data->playerName + "'s progress"
                                           : "this corrupted save";
             m_confirm.open("Delete slot " + std::to_string(slot) + "?",
@@ -120,7 +120,7 @@ void LoadGameScreen::update(float deltaSeconds, const app::InputState& input) {
     layout();
     if (m_confirm.isOpen()) {
         if (m_confirm.update(m_context.theme, input) == DialogResult::Confirmed) {
-            m_context.deleteSlot(m_pendingDelete);
+            m_context.profiles.deleteSlot(m_pendingDelete);
             refresh();
         }
         return;
@@ -134,21 +134,21 @@ void LoadGameScreen::update(float deltaSeconds, const app::InputState& input) {
 
 void LoadGameScreen::drawSlotCard(int index) const {
     const render::Theme& theme = m_context.theme;
-    const app::SaveSlot& slot = m_context.slots[slotIndex(index)];
+    const core::SaveSlot& slot = m_context.profiles.slots()[slotIndex(index)];
     const Rectangle card = cardBounds(index);
-    const bool ready = slot.status == app::SlotStatus::Ready;
+    const bool ready = slot.status == core::SlotStatus::Ready;
     render::drawPanel(card, theme.px(14.0f), render::fade(palette::PANEL, 0.96f),
                       ready ? palette::WALL : render::fade(palette::TEXT_MUTED, 0.4f),
                       theme.px(1.5f));
     const float x = card.x + theme.px(CARD_PADDING);
     const float titleY = card.y + theme.px(CARD_PADDING * 0.8f);
     const std::string prefix = "SLOT " + std::to_string(index + 1) + "   ";
-    if (slot.status == app::SlotStatus::Empty) {
+    if (slot.status == core::SlotStatus::Empty) {
         theme.drawText(prefix + "Empty", Vector2{x, titleY}, theme.px(render::textsize::LARGE),
                        palette::TEXT_MUTED);
         return;
     }
-    if (slot.status == app::SlotStatus::Corrupt) {
+    if (slot.status == core::SlotStatus::Corrupt) {
         theme.drawText(prefix + "Save corrupted", Vector2{x, titleY},
                        theme.px(render::textsize::LARGE), palette::WALL_GLOW);
         theme.drawText("The file could not be read (" + slot.error + "). You can delete it.",

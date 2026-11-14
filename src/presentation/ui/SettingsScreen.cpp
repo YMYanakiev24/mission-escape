@@ -92,7 +92,7 @@ void SettingsScreen::onEnter() {
 }
 
 void SettingsScreen::loadValues() {
-    const core::Settings& settings = m_context.settings;
+    const core::Settings& settings = m_context.profiles.settings();
     m_master.setValue(settings.masterVolume);
     m_music.setValue(settings.musicVolume);
     m_sfx.setValue(settings.sfxVolume);
@@ -104,7 +104,7 @@ void SettingsScreen::loadValues() {
 }
 
 void SettingsScreen::refreshSkinCards() {
-    const core::SaveData* profile = m_context.activeProfile();
+    const core::SaveData* profile = m_context.profiles.activeProfile();
     for (std::size_t index = 0; index < m_skinCards.size(); ++index) {
         const core::SkinId skin = core::ALL_SKINS[index];
         const bool unlocked = profile != nullptr ? profile->progress.isSkinUnlocked(skin)
@@ -173,7 +173,7 @@ void SettingsScreen::layout() {
 }
 
 void SettingsScreen::applyChanges(const Widget* fired) {
-    core::Settings& settings = m_context.settings;
+    core::Settings& settings = m_context.profiles.settings();
     settings.masterVolume = m_master.value();
     settings.musicVolume = m_music.value();
     settings.sfxVolume = m_sfx.value();
@@ -186,16 +186,16 @@ void SettingsScreen::applyChanges(const Widget* fired) {
         m_context.applyDisplaySettings();
     }
     for (const SkinCard& card : m_skinCards) {
-        core::SaveData* profile = m_context.activeProfile();
+        core::SaveData* profile = m_context.profiles.activeProfile();
         if (fired == &card && profile != nullptr && profile->progress.selectSkin(card.skin())) {
-            m_context.saveActiveProfile();
+            m_context.profiles.saveActiveProfile();
             refreshSkinCards();
         }
     }
 }
 
 void SettingsScreen::leave() {
-    m_context.saveSettings();
+    m_context.profiles.saveSettings();
     m_context.navigator.pop();
 }
 
@@ -219,7 +219,7 @@ void SettingsScreen::draw() {
     drawScreenTitle(theme, "SETTINGS", "");
     drawContentPanel(theme, contentPanel(theme));
     m_focus.draw(theme, m_context.time);
-    if (m_tabs.active() == SKINS_TAB && m_context.activeProfile() == nullptr) {
+    if (m_tabs.active() == SKINS_TAB && m_context.profiles.activeProfile() == nullptr) {
         const Rectangle panel = contentPanel(theme);
         theme.drawTextCentered(
             "Start or load a game to unlock and choose skins.",

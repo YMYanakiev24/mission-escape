@@ -75,7 +75,7 @@ void GameCompleteScreen::draw() {
     theme.drawGlowText("YOU ESCAPED THE LABYRINTH", center,
                        theme.px(render::textsize::HEADING * 1.2f), palette::TEXT,
                        palette::ACCENT_GREEN);
-    const core::SaveData* profile = m_context.activeProfile();
+    const core::SaveData* profile = m_context.profiles.activeProfile();
     if (profile != nullptr) {
         const std::string summary = profile->playerName + " cleared all " +
                                     std::to_string(core::LEVEL_COUNT) + " levels with " +

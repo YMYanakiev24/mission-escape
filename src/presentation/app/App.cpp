@@ -103,13 +103,15 @@ LaunchOptions parseLaunchOptions(int argc, char* argv[]) {
     return options;
 }
 
-App::App(const LaunchOptions& options) : m_options(options) {}
+App::App(const LaunchOptions& options, core::SaveRepository& saves,
+         core::SettingsRepository& settingsStore)
+    : m_options(options), m_saves(saves), m_settingsStore(settingsStore) {}
 
 int App::run() {
     const WindowGuard window;
     const AudioDeviceGuard audioDevice;
-    AppContext context(m_options, std::filesystem::path(GetApplicationDirectory()));
-    context.loadPersistentData();
+    AppContext context(m_options, m_saves, m_settingsStore);
+    context.profiles.loadAll();
     context.applyDisplaySettings();
     context.theme.loadFont(assetPath(FONT_FILE));
     context.audio.initialize(assetPath(AUDIO_FOLDER));
@@ -128,12 +130,12 @@ int App::run() {
             input = tour->beforeUpdate(input);
         }
         screens.update(deltaSeconds, input);
-        context.audio.applySettings(context.settings);
+        context.audio.applySettings(context.profiles.settings());
         context.audio.playMusic(musicFor(context));
         context.audio.update(deltaSeconds);
         BeginDrawing();
         screens.draw();
-        if (context.settings.showFps) {
+        if (context.profiles.settings().showFps) {
             drawFpsCounter(context.theme);
         }
         if (tour) {

@@ -51,7 +51,18 @@ function(mission_escape_enable_warnings target)
 endfunction()
 
 # ---------------------------------------------------------------------------
-# Business logic layer (src/business): the game rules, no raylib and no files
+# Three-layer architecture. Each layer is its own library and only sees the include folders of
+# the layers it may use, so a wrong-way #include fails to compile:
+#
+#   presentation (maze_presentation) --> business (maze_business) <-- data (maze_data)
+#
+# The data layer implements the business layer's repository interfaces; src/main.cpp is the
+# composition root that creates the data layer and hands it to the presentation layer.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Business logic layer (src/business): game rules, profiles and the repository interfaces.
+# No raylib and no files.
 # ---------------------------------------------------------------------------
 add_library(maze_business STATIC
     src/business/core/Cell.cpp
@@ -64,6 +75,7 @@ add_library(maze_business STATIC
     src/business/core/Pathfinding.cpp
     src/business/core/Perks.cpp
     src/business/core/Player.cpp
+    src/business/core/ProfileService.cpp
     src/business/core/Progress.cpp
     src/business/core/Random.cpp
     src/business/core/Scoring.cpp
@@ -75,7 +87,8 @@ target_include_directories(maze_business PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/
 mission_escape_enable_warnings(maze_business)
 
 # ---------------------------------------------------------------------------
-# Data access layer (src/data): save slots and settings as key=value text files
+# Data access layer (src/data): save slots and settings as key=value text files. Implements
+# core::SaveRepository and core::SettingsRepository.
 # ---------------------------------------------------------------------------
 add_library(maze_data STATIC
     src/data/io/KeyValueDocument.cpp
@@ -87,10 +100,10 @@ target_link_libraries(maze_data PUBLIC maze_business)
 mission_escape_enable_warnings(maze_data)
 
 # ---------------------------------------------------------------------------
-# Presentation layer (src/presentation): window, input, screens, rendering, audio
+# Presentation layer (src/presentation): window, input, screens, rendering and audio.
+# Uses only the business layer (and raylib); it cannot include the data layer.
 # ---------------------------------------------------------------------------
-add_executable(maze_game
-    src/main.cpp
+add_library(maze_presentation STATIC
     src/presentation/app/App.cpp
     src/presentation/app/AppContext.cpp
     src/presentation/app/FeedbackPresenter.cpp
@@ -128,8 +141,15 @@ add_executable(maze_game
     src/presentation/ui/SplashScreen.cpp
     src/presentation/ui/Widgets.cpp
 )
-target_include_directories(maze_game PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/presentation)
-target_link_libraries(maze_game PRIVATE maze_business maze_data raylib)
+target_include_directories(maze_presentation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/presentation)
+target_link_libraries(maze_presentation PUBLIC maze_business raylib)
+mission_escape_enable_warnings(maze_presentation)
+
+# ---------------------------------------------------------------------------
+# maze_game: the executable. main.cpp is the composition root that wires the layers together.
+# ---------------------------------------------------------------------------
+add_executable(maze_game src/main.cpp)
+target_link_libraries(maze_game PRIVATE maze_presentation maze_data)
 mission_escape_enable_warnings(maze_game)
 
 if(MSVC)
@@ -162,6 +182,7 @@ if(MISSION_ESCAPE_BUILD_TESTS)
         tests/test_movement.cpp
         tests/test_pathfinding.cpp
         tests/test_perks.cpp
+        tests/test_profiles.cpp
         tests/test_progress.cpp
         tests/test_saves.cpp
         tests/test_scoring.cpp
@@ -175,7 +196,7 @@ if(MISSION_ESCAPE_BUILD_TESTS)
 
     set(MISSION_ESCAPE_TEST_SUITES
         grid generation validation movement pathfinding textview stars playthrough unlocks
-        settings saves fog chaser tiers perks audio)
+        settings saves fog chaser tiers perks audio profiles)
     foreach(suite IN LISTS MISSION_ESCAPE_TEST_SUITES)
         add_test(NAME ${suite} COMMAND maze_tests --suite ${suite})
     endforeach()

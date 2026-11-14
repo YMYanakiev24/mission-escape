@@ -42,7 +42,7 @@ void GameplayScreen::onEnter() {
     m_paused = false;
     m_resultShown = false;
     m_confirm.close();
-    const core::SaveData* profile = m_context.activeProfile();
+    const core::SaveData* profile = m_context.profiles.activeProfile();
     m_showTierIntro = m_context.session && profile != nullptr &&
                       !profile->progress.hasSeenTierIntro(m_context.session->level().spec().tier);
 }
@@ -105,7 +105,7 @@ void GameplayScreen::checkFinished() {
     } else if (level.state() == core::LevelState::Caught) {
         // Caught: 0 stars and records untouched. A resumed save of this attempt is gone too,
         // otherwise "Continue" would undo the catch.
-        m_context.discardSavedAttempt();
+        m_context.profiles.discardSavedAttempt();
         m_resultShown = true;
         m_context.navigator.push(app::ScreenId::Caught);
     }
@@ -116,9 +116,9 @@ void GameplayScreen::updateTierIntro(const app::InputState& input) {
         return;
     }
     m_showTierIntro = false;
-    if (core::SaveData* profile = m_context.activeProfile()) {
+    if (core::SaveData* profile = m_context.profiles.activeProfile()) {
         profile->progress.markTierIntroSeen(m_context.session->level().spec().tier);
-        m_context.saveActiveProfile();
+        m_context.profiles.saveActiveProfile();
     }
 }
 
@@ -192,7 +192,7 @@ void GameplayScreen::handleConfirmDialog(const app::InputState& input) {
     const DialogResult result = m_confirm.update(m_context.theme, input);
     if (result == DialogResult::Confirmed) {
         // A quit scores 0 stars, leaves every record untouched and abandons any resumed save.
-        m_context.discardSavedAttempt();
+        m_context.profiles.discardSavedAttempt();
         m_context.endSession();
         m_context.navigator.replaceWith(app::ScreenId::LevelSelect);
     }

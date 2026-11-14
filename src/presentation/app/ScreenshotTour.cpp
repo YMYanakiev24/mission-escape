@@ -136,7 +136,7 @@ void ScreenshotTour::createDemoProfile(core::ViewMode mode) {
     snapshot.seed = DEMO_SEED;
     data.snapshot = snapshot;
     data.lastPlayed = "2026-10-18 21:40";
-    m_context.createProfile(1, std::move(data));
+    m_context.profiles.createProfile(1, std::move(data));
 }
 
 void ScreenshotTour::startScriptedLevel(int level, int size, core::ViewMode mode,
@@ -209,10 +209,10 @@ void ScreenshotTour::addProfileMenuSteps() {
     addStep(
         "07_load_game",
         [this] {
-            SaveSlot corrupt;
-            corrupt.status = SlotStatus::Corrupt;
+            core::SaveSlot corrupt;
+            corrupt.status = core::SlotStatus::Corrupt;
             corrupt.error = "missing or invalid size";
-            m_context.slots[2] = corrupt;
+            m_context.profiles.slots()[2] = corrupt;
             m_context.navigator.replaceWith(ScreenId::LoadGame);
         },
         80);
@@ -222,7 +222,7 @@ void ScreenshotTour::addProfileMenuSteps() {
     addStep(
         "08_skins_unlocked",
         [this] {
-            if (core::SaveData* profile = m_context.activeProfile()) {
+            if (core::SaveData* profile = m_context.profiles.activeProfile()) {
                 profile->progress.restoreSkinMask(ALL_SKINS_MASK);
                 profile->progress.selectSkin(core::SkinId::Comet);
             }
@@ -274,7 +274,7 @@ void ScreenshotTour::addLabyrinthAndFogSteps() {
     addStep(
         "21_tier3_intro_card",
         [this] {
-            if (core::SaveData* profile = m_context.activeProfile()) {
+            if (core::SaveData* profile = m_context.profiles.activeProfile()) {
                 profile->progress.restoreTierIntroMask(FOG_UNSEEN_INTRO_MASK);
             }
             startScriptedLevel(12, 20, core::ViewMode::Classic2D, DEMO_SEED + 12U);
@@ -333,7 +333,7 @@ void ScreenshotTour::addPerformanceSteps() {
     addStep(
         "34_perf_3d_50x50",
         [this] {
-            m_context.settings.showFps = true;
+            m_context.profiles.settings().showFps = true;
             startScriptedLevel(4, core::MAX_MAZE_SIZE, core::ViewMode::FirstPerson3D, DEMO_SEED);
         },
         180, firstPersonWalker());

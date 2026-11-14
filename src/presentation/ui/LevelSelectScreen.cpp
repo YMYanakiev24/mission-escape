@@ -98,13 +98,13 @@ LevelSelectScreen::LevelSelectScreen(app::AppContext& context) : m_context(conte
 
 void LevelSelectScreen::onEnter() {
     refreshTiles();
-    const core::SaveData* profile = m_context.activeProfile();
+    const core::SaveData* profile = m_context.profiles.activeProfile();
     const int focusLevel = profile != nullptr ? profile->progress.highestUnlockedLevel() : 1;
     m_focus.focus(m_tiles[static_cast<std::size_t>(focusLevel - 1)]);
 }
 
 void LevelSelectScreen::refreshTiles() {
-    const core::SaveData* profile = m_context.activeProfile();
+    const core::SaveData* profile = m_context.profiles.activeProfile();
     for (int level = 1; level <= core::LEVEL_COUNT; ++level) {
         const bool unlocked = profile != nullptr && profile->progress.isLevelUnlocked(level);
         const int stars = profile != nullptr ? profile->progress.record(level).bestStars : 0;
@@ -145,11 +145,11 @@ void LevelSelectScreen::handleAction(const Widget* fired) {
         return;
     }
     if (fired == &m_viewMode) {
-        if (core::SaveData* profile = m_context.activeProfile()) {
+        if (core::SaveData* profile = m_context.profiles.activeProfile()) {
             profile->viewMode = profile->viewMode == core::ViewMode::Classic2D
                                     ? core::ViewMode::FirstPerson3D
                                     : core::ViewMode::Classic2D;
-            m_context.saveActiveProfile();
+            m_context.profiles.saveActiveProfile();
             refreshTiles();
         }
         return;
@@ -163,7 +163,7 @@ void LevelSelectScreen::handleAction(const Widget* fired) {
 
 void LevelSelectScreen::update(float deltaSeconds, const app::InputState& input) {
     m_context.menuBackground.update(deltaSeconds);
-    if (m_context.activeProfile() == nullptr) {
+    if (m_context.profiles.activeProfile() == nullptr) {
         m_context.navigator.replaceWith(app::ScreenId::MainMenu);
         return;
     }
@@ -194,7 +194,7 @@ void LevelSelectScreen::drawTierLabels() const {
 void LevelSelectScreen::draw() {
     const render::Theme& theme = m_context.theme;
     drawMenuBackdrop(m_context);
-    const core::SaveData* profile = m_context.activeProfile();
+    const core::SaveData* profile = m_context.profiles.activeProfile();
     std::string subtitle;
     if (profile != nullptr) {
         subtitle = profile->playerName + "  |  " + std::to_string(profile->progress.totalStars()) +

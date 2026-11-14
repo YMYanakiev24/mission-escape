@@ -129,11 +129,11 @@ void GameSession::update(float deltaSeconds, const InputState& input) {
     }
     m_shakeSeconds = std::max(0.0f, m_shakeSeconds - deltaSeconds);
     m_effects.update(deltaSeconds);
-    if (!m_context.lastPersistenceError.empty()) {
-        m_effects.toast(m_context.lastPersistenceError, palette::WALL_GLOW);
-        m_context.lastPersistenceError.clear();
+    if (!m_context.profiles.lastError().empty()) {
+        m_effects.toast(m_context.profiles.lastError(), palette::WALL_GLOW);
+        m_context.profiles.lastError().clear();
     }
-    if (const core::SaveData* profile = m_context.activeProfile()) {
+    if (const core::SaveData* profile = m_context.profiles.activeProfile()) {
         m_renderer2D.setSkin(profile->progress.selectedSkin());
     }
     m_renderer2D.setShake(shakeOffset());
@@ -141,7 +141,7 @@ void GameSession::update(float deltaSeconds, const InputState& input) {
     m_renderer3D.setShake(
         Vector2{shake.x * SHAKE_WORLD_PER_PIXEL, shake.y * SHAKE_WORLD_PER_PIXEL});
     if (isFirstPerson()) {
-        m_renderer3D.update(deltaSeconds, *m_level, m_context.settings.headBob);
+        m_renderer3D.update(deltaSeconds, *m_level, m_context.profiles.settings().headBob);
     } else {
         m_renderer2D.update(deltaSeconds, *m_level, viewport(), m_context.theme.scale());
     }
@@ -153,7 +153,7 @@ void GameSession::refreshView() {
     m_renderer2D.setShake(Vector2{0.0f, 0.0f});
     m_renderer3D.setShake(Vector2{0.0f, 0.0f});
     if (isFirstPerson()) {
-        m_renderer3D.update(0.0f, *m_level, m_context.settings.headBob);
+        m_renderer3D.update(0.0f, *m_level, m_context.profiles.settings().headBob);
     } else {
         m_renderer2D.update(0.0f, *m_level, viewport(), m_context.theme.scale());
     }
@@ -212,7 +212,8 @@ void GameSession::processEvents() {
     const float cellPixels =
         isFirstPerson() ? m_context.theme.px(PARTICLE_CELL_PIXELS_3D) : m_renderer2D.cellSize();
     for (const core::LevelEvent& event : m_level->takeEvents()) {
-        if (event.type == core::LevelEventType::Caught && m_context.settings.screenShake) {
+        if (event.type == core::LevelEventType::Caught &&
+            m_context.profiles.settings().screenShake) {
             m_shakeSeconds = SHAKE_SECONDS;
         }
         if (event.type == core::LevelEventType::Moved) {
@@ -255,7 +256,7 @@ render::HudData GameSession::buildHudData() const {
     data.targetStars = target.stars;
     data.targetLimitSeconds = core::starTimeLimit(target.stars, level.parTimeSeconds());
     data.targetSecondsLeft = target.secondsLeft;
-    if (const core::SaveData* profile = m_context.activeProfile()) {
+    if (const core::SaveData* profile = m_context.profiles.activeProfile()) {
         const core::LevelRecord& record = profile->progress.record(level.levelNumber());
         if (record.completed) {
             data.bestSeconds = static_cast<float>(record.bestTimeMs) / MILLISECONDS_PER_SECOND;
@@ -389,8 +390,8 @@ void GameSession::drawWorld(float time) {
         return;
     }
     m_renderer3D.draw(*m_level, time);
-    const core::SkinId skin = m_context.activeProfile() != nullptr
-                                  ? m_context.activeProfile()->progress.selectedSkin()
+    const core::SkinId skin = m_context.profiles.activeProfile() != nullptr
+                                  ? m_context.profiles.activeProfile()->progress.selectedSkin()
                                   : core::SkinId::Wisp;
     m_renderer3D.drawHandLight(skin, *m_level, time);
     m_minimap.draw(m_context.theme, *m_level, m_renderer3D.yaw(), skin, time);
