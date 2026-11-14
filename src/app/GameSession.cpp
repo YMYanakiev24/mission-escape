@@ -54,10 +54,6 @@ constexpr const char* PAD_HINT_3D =
     "UP DOWN  walk     LEFT RIGHT  turn     LB RB  strafe     X  berry     LT  map     "
     "Y  text view     SELECT  restart     START  pause";
 
-std::string cellLabel(core::Cell cell) {
-    return "Cell (" + std::to_string(cell.x) + ", " + std::to_string(cell.y) + "). ";
-}
-
 /// Executes movement keys: a fresh press moves now (or is buffered behind the running move),
 /// a held key keeps walking as soon as the previous move has finished.
 void applyMovementBindings(core::Level& level, FeedbackPresenter& feedback,
@@ -359,32 +355,31 @@ void GameSession::drawDangerVignette() const {
 CellDescription GameSession::describeCell(core::Cell cell) const {
     const core::Maze& maze = m_level->maze();
     if (m_level->spec().hasFog && !m_level->fog().isExplored(cell)) {
-        return {"Unexplored", cellLabel(cell) + "Hidden in the fog. Walk closer to see it."};
+        return {"Unexplored", "Hidden in the fog. Walk closer to see it."};
     }
     if (m_level->chaser().isActive() && cell == m_level->chaser().cell()) {
-        return {"The Hunter",
-                cellLabel(cell) + "It follows the shortest path to you. Keep moving!"};
+        return {"The Hunter", "It follows the shortest path to you. Keep moving!"};
     }
     for (const core::PerkItem& perk : m_level->perks()) {
         if (!perk.collected && perk.cell == cell) {
             return {std::string(core::perkName(perk.type)),
-                    cellLabel(cell) + std::string(core::perkDescription(perk.type))};
+                    std::string(core::perkDescription(perk.type))};
         }
     }
     if (cell == maze.exit()) {
-        return {"Exit portal", cellLabel(cell) + "Step inside to finish the level."};
+        return {"Exit portal", "Step inside to finish the level."};
     }
     if (cell == maze.start()) {
-        return {"Start", cellLabel(cell) + "Every run begins in the top-left corner."};
+        return {"Start", "Every run begins in the top-left corner."};
     }
     for (const core::Direction direction : core::ALL_DIRECTIONS) {
         if (maze.hasSecretDoor(cell, direction)) {
-            return {"Secret door", cellLabel(cell) + "A green rune on the " +
+            return {"Secret door", "A green rune on the " +
                                        std::string(core::directionName(direction)) +
                                        " wall: you can walk straight through it."};
         }
     }
-    return {"Path", cellLabel(cell) + "An open corridor cell."};
+    return {"Path", "An open corridor cell."};
 }
 
 void GameSession::drawWorld(float time) {
